@@ -1,0 +1,1 @@
+Contributor changes now carry a documentation-impact declaration, generated schema/version references, reviewed Mermaid diagrams and release fragments. Local and CI checks report missing documentation before staging integration; the initial application is explicitly labeled as a prerelease.

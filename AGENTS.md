@@ -1,6 +1,6 @@
 # Repository workflow
 
-Repository: https://github.com/fazalhassan23/DeDuplicator
+Repository: [DeDuplicator](https://github.com/fazalhassan23/DeDuplicator)
 
 - Use `staging` for integration. Start each cohesive feature, fix, refactor or documentation branch from the latest `origin/staging`. Keep tightly coupled changes together when splitting them would break the app.
 - Never push development changes directly to `main` or `staging`. Push dedicated feature branches and open PRs targeting `staging`.
@@ -17,3 +17,7 @@ Repository: https://github.com/fazalhassan23/DeDuplicator
 ## Local validation
 
 Use `./scripts/build.ps1` on Windows with .NET 10. Use `-Package` for self-contained win-x64 packaging. `.tools/`, `artifacts/`, `bin/`, `obj/`, databases and benchmark data must remain untracked. Refer to `docs/known-limitations.md` before marking the application complete or a draft PR ready for review.
+
+## Documentation definition of done
+
+Every feature, fix or behavioral change updates its authoritative documentation in the same branch, including follow-up pushes. Review `scripts/docs/impact-rules.json`, update affected diagrams, add a user-facing `.changes/` fragment or a substantive declared exemption, regenerate references with `npm run docs:generate`, and run `npm run docs:test` plus `npm run docs:check -- --base origin/staging --pr-body .tools/pr-body.md` before committing. Schema changes also address migrations/compatibility and migration tests. The full PR description must contain the structured Documentation impact declaration from the template. `--content-only` is not a full PR gate. See CONTRIBUTING.md for setup and authoritative topic links. Documentation CI cannot prove semantic accuracy or authorize main, tags or releases.

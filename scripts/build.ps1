@@ -18,6 +18,8 @@ try {
         if ($LASTEXITCODE) { throw 'Publish failed.' }
         Copy-Item README.md artifacts/DeDuplicator-win-x64
         Copy-Item docs, profiles -Destination artifacts/DeDuplicator-win-x64 -Recurse -Force
-        Compress-Archive -Path artifacts/DeDuplicator-win-x64/* -DestinationPath artifacts/DeDuplicator-win-x64.zip -Force
+        $releaseVersion = & $dotnet msbuild src/DeDuplicator.App/DeDuplicator.App.csproj -getProperty:Version
+        if ($LASTEXITCODE -or [string]::IsNullOrWhiteSpace($releaseVersion)) { throw 'Could not evaluate package version.' }
+        Compress-Archive -Path artifacts/DeDuplicator-win-x64/* -DestinationPath "artifacts/DeDuplicator-$releaseVersion-win-x64.zip" -Force
     }
 } finally { Pop-Location }

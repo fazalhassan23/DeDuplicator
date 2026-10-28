@@ -4,3 +4,6 @@
 artifacts/
 benchmark-data/
 *.db*
+node_modules/
+__pycache__/
+*.pyc
