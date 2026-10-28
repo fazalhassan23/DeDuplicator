@@ -1,0 +1,11 @@
+# Architecture
+
+`Core` defines profiles, file snapshots, duplicate groups, path protection and deterministic keeper planning. It has no WPF or persistence dependency. `Infrastructure` handles Win32 identity, locked read streams, SHA-256, byte comparison, incremental scanning, SQLite, cleanup journaling and streaming exports. `App` composes these through explicit Microsoft DI registration and binds the WPF workflow through a view model and commands. Async command boundaries display failures and treat cancellation as a normal outcome.
+
+The scanner stores one row per physical file identity per scan. Overlapping roots are normalized before depth-first enumeration. Directory iterators retain only traversal state. Reparse points are always excluded. Size buckets are queried from SQLite; singleton buckets are not read for hashing. Sampling uses three nonoverlapping 4 KiB regions for files at least 1 MiB long. Sampling only eliminates candidates. Full SHA-256 uses bounded streams, then full byte comparison partitions hash buckets, including when a test hasher deliberately collides. Representatives are invalidated if unavailable or changed. All provisional singleton groups are removed at completion.
+
+One file is hashed at a time. Verification holds two handles; cleanup copy verification holds at most three. This conservative resource profile avoids unbounded task creation, read queues and drive listings. SQLite handles metadata beyond RAM capacity. The result grid virtualizes and loads bounded pages; exports iterate database rows. The UI receives progress at most roughly seven times per second. Expensive work runs via Task.Run and cancellable asynchronous stream operations.
+
+SQLite WAL and FULL synchronous mode persist scans, files, issues and journal transitions. Startup marks Running scans and in-flight journal entries interrupted. Scan recovery is a deliberate restart with the saved profile. Cleanup recovery never automatically repeats a destructive operation. Journal entries precede file mutations. No batch is atomic.
+
+The current view model coordinates settings, result pages and dialogs; native operations remain outside it. Tests combine domain rules and real NTFS fixture operations in one test project to avoid redundant layers. See safety and limitations for the exact live-filesystem guarantees.

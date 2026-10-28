@@ -1,0 +1,13 @@
+# Known limitations
+
+- Recycle Bin removal is a refused operation, not an implemented cleanup route. The UI explains this explicitly. Use quarantine, or enable permanent deletion only when intended.
+- Planning considers only the current displayed members, up to 500 per group. Larger groups are stored completely, browseable in 500-member pages, and exported completely. A keeper is retained inside each reviewed subset, so cleaning multiple pages can retain multiple copies. There is no one-click plan covering an entire million-member group.
+- One fixed conservative I/O profile; no user-selectable concurrency or link following. All reparse paths, including online cloud reparse files, are skipped even with hydration consent.
+- No true pause, incremental resume, cached-hash reuse, or automatic recovery of interrupted transfers. Saved-profile rescans revalidate from the beginning. Restore of ambiguous/failed transfers is manual.
+- Hard-link aliases are deduplicated in SQLite, with a skipped issue per encountered alias, rather than displayed as separate member rows. Volume/file IDs rely on classic Windows information, with weaker guarantees on some remote and ReFS configurations.
+- Sort modes are logical redundant bytes, member count, file length and location; file-type sort and arbitrary location priority lists are not yet offered. UI reports modified time, not creation/access times. No preview pane or selected-file metadata inspector is included.
+- Final verification and cleanup byte counters are not yet exact: hash read totals and successful byte comparisons are counted, but early mismatches and the last probe byte are omitted. Progress group count appears on completion. Separate persisted per-phase timing and large real-world performance benchmarks remain to be added.
+- Security fingerprints, streams and selected attributes are checked before cleanup, not fully displayed as side-by-side metadata differences. Destination ACL and timestamp preservation for cross-volume quarantine is limited; see safety.
+- Unit/integration tests run on local NTFS without elevation. Separate real network-disconnect, hostile directory swap, cloud hydration, removable-drive, low-disk, million-file, screen-reader and high-DPI certification are not performed. This is not yet a fully qualified production release.
+- Portable unsigned win-x64 packaging only; no MSIX/MSI, code signing or automatic updates. Database schema migrations and retention/pruning UI are not implemented; do not point a future incompatible build at the same database without backup.
+- Debug logging may contain operation error text. No logs are written or uploaded by default; the local database, UI issue details and explicit exports contain sensitive paths.
