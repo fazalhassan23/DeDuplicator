@@ -5,6 +5,7 @@ import argparse
 import os
 import re
 import sqlite3
+import textwrap
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import quote, unquote, urlsplit, urlunsplit
@@ -60,7 +61,7 @@ def schema_reference(root: Path = ROOT) -> str:
             if not db.execute(f'PRAGMA index_list("{table}")').fetchall():
                 lines.append("No indexes beyond the INTEGER PRIMARY KEY rowid alias, when present.")
             lines += ["", "Foreign keys: " + ("present" if db.execute(f'PRAGMA foreign_key_list("{table}")').fetchall() else "none") + ".", ""]
-        lines += ["## SQLite constraint interpretation", "", "`INTEGER PRIMARY KEY` aliases rowid and generates an integer when NULL is inserted. Other PRIMARY KEY columns are ordinary TEXT rowid-table keys: SQLite can accept NULL despite the key declaration. There are no explicit NOT NULL, DEFAULT, CHECK or FOREIGN KEY clauses in this schema. Application callers supply values; that is not a database constraint.", ""]
+        lines += ["## SQLite constraint interpretation", "", "`INTEGER PRIMARY KEY` aliases rowid and generates an integer when NULL is inserted. Ordinary TEXT primary keys in rowid tables can accept NULL unless explicitly constrained. NOT NULL/default/foreign-key information is reflected above; the exact initializer below also preserves CHECK expressions, table-level constraints and PRAGMAs that column introspection cannot fully describe. Application non-nullability is not a database constraint.", "", "## Authoritative initializer SQL", "", "```sql", textwrap.dedent(schema_sql(root)).strip(), "```", ""]
     return "\n".join(lines)
 
 

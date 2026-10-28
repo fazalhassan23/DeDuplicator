@@ -2,7 +2,7 @@
 
 ## Authoritative structure
 
-The live initializer is the raw SQL string in [ScanStore.cs](../src/DeDuplicator.Infrastructure/ScanStore.cs). The [generated structural reference](generated/schema-reference.md) lists every column, declared type, NOT NULL flag, default, primary-key position, unique index and foreign key. The [entity diagram](generated/entities.md) is generated from that initializer too. Run `npm run docs:generate`; CI recreates SQLite in memory and rejects drift without executing application code.
+The live initializer is the raw SQL string in [ScanStore.cs](../src/DeDuplicator.Infrastructure/ScanStore.cs). The [generated structural reference](generated/schema-reference.md) lists every column, declared type, NOT NULL flag, default, primary-key position, unique index and foreign key, followed by the exact initializer SQL to preserve CHECK/table-level constraints and PRAGMAs beyond column introspection. The [entity diagram](generated/entities.md) is generated from that initializer too. Run `npm run docs:generate`; CI recreates SQLite in memory and rejects drift without executing application code.
 
 ### Tables and lifecycle
 

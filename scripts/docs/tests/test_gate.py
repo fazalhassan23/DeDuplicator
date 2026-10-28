@@ -111,6 +111,10 @@ class DocumentationGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "authoritative"):
             generate.schema_sql(self.root)
 
+    def test_check_constraints_are_preserved_in_generated_reference(self):
+        self.write("src/DeDuplicator.Infrastructure/ScanStore.cs", 'cmd.CommandText = """\nCREATE TABLE scans(id TEXT PRIMARY KEY, state TEXT CHECK(length(state)>0));\n""";')
+        self.assertIn("CHECK(length(state)>0)", generate.schema_reference(self.root))
+
     def test_version_is_semver_and_changelog_assembly_is_previewable(self):
         self.write("Version.props", "<Project><PropertyGroup><Version>0.3.0-rc.1</Version></PropertyGroup></Project>")
         original = "# Changelog\n\n## [Unreleased]\n\n<!-- unreleased:start -->\n<!-- unreleased:end -->\n\n<!-- changelog-fragments -->\n"

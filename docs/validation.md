@@ -12,7 +12,7 @@ The implementation is usable for exact scans, reviewed quarantine and restore, b
 
 ## Documentation enforcement validation
 
-On 2026-10-28 the full local PR-impact command passed against origin/staging: 34 Markdown files, eight Mermaid diagrams rendered through Chromium, formatting, local links/anchors, exact-document declarations, fragments and generated-reference drift. All 21 documentation-tool tests passed, including a real Git changed-file fixture that omits mapped scan docs, accepted justified exemptions, real malformed Markdown/Mermaid rejection, schema drift and changelog archive/collision behavior. Changelog assembly was previewed without modifying the actual release history or creating a tag.
+On 2026-10-28 the full local PR-impact command passed against origin/staging: 34 Markdown files, eight Mermaid diagrams rendered through Chromium, formatting, local links/anchors, exact-document declarations, fragments and generated-reference drift. All 22 documentation-tool tests passed, including a real Git changed-file fixture that omits mapped scan docs, accepted justified exemptions, real malformed Markdown/Mermaid rejection, schema drift and changelog archive/collision behavior. Changelog assembly was previewed without modifying the actual release history or creating a tag.
 
 The application was rebuilt after adding Version.props, derived title metadata and versioned package naming: zero warnings/errors and 32 passing application tests. A self-contained `DeDuplicator-0.1.0-alpha.1-win-x64.zip` was produced. Generated assembly metadata was inspected: assembly/file version 0.1.0.0 and informational version 0.1.0-alpha.1 plus the source revision. These checks do not add interactive desktop qualification.
 

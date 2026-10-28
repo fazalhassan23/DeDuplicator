@@ -79,4 +79,19 @@ Foreign keys: none.
 
 ## SQLite constraint interpretation
 
-`INTEGER PRIMARY KEY` aliases rowid and generates an integer when NULL is inserted. Other PRIMARY KEY columns are ordinary TEXT rowid-table keys: SQLite can accept NULL despite the key declaration. There are no explicit NOT NULL, DEFAULT, CHECK or FOREIGN KEY clauses in this schema. Application callers supply values; that is not a database constraint.
+`INTEGER PRIMARY KEY` aliases rowid and generates an integer when NULL is inserted. Ordinary TEXT primary keys in rowid tables can accept NULL unless explicitly constrained. NOT NULL/default/foreign-key information is reflected above; the exact initializer below also preserves CHECK expressions, table-level constraints and PRAGMAs that column introspection cannot fully describe. Application non-nullability is not a database constraint.
+
+## Authoritative initializer SQL
+
+```sql
+PRAGMA journal_mode=WAL;
+            PRAGMA synchronous=FULL;
+            CREATE TABLE IF NOT EXISTS scans(id TEXT PRIMARY KEY, started TEXT, state TEXT, profile TEXT);
+            CREATE TABLE IF NOT EXISTS files(id INTEGER PRIMARY KEY, scan TEXT, path TEXT, identity TEXT, length INTEGER, record TEXT, hash TEXT, sample TEXT, group_id INTEGER);
+            CREATE UNIQUE INDEX IF NOT EXISTS physical ON files(scan,identity);
+            CREATE INDEX IF NOT EXISTS sizes ON files(scan,length);
+            CREATE INDEX IF NOT EXISTS hashes ON files(scan,length,hash);
+            CREATE INDEX IF NOT EXISTS groups ON files(scan,group_id);
+            CREATE TABLE IF NOT EXISTS issues(id INTEGER PRIMARY KEY, scan TEXT, path TEXT, reason TEXT);
+            CREATE TABLE IF NOT EXISTS journal(id TEXT PRIMARY KEY, plan TEXT, source TEXT, destination TEXT, action TEXT, state TEXT, detail TEXT, record TEXT, created TEXT, hash TEXT);
+```
