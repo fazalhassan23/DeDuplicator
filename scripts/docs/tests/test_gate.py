@@ -190,6 +190,23 @@ class DocumentationGateTests(unittest.TestCase):
         self.assertEqual([], check.link_errors(self.root / "CHANGELOG.md", self.root))
         self.assertIn("[safety guide](docs/safety.md)", (self.root / "CHANGELOG.md").read_text())
 
+    def test_base_branch_advances_do_not_become_unrelated_pr_changes(self):
+        def git(*arguments):
+            return subprocess.check_output(["git", *arguments], cwd=self.root, stderr=subprocess.DEVNULL)
+        git("init", "-b", "staging")
+        git("config", "user.name", "Fixture")
+        git("config", "user.email", "fixture@example.invalid")
+        git("-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "baseline")
+        git("branch", "feature")
+        self.write("unrelated-base.txt", "another feature\n")
+        git("add", "unrelated-base.txt")
+        git("-c", "commit.gpgsign=false", "commit", "-m", "base advanced")
+        git("switch", "feature")
+        self.write("src/Engine/Scanner.cs", "// scan feature fixture\n")
+        git("add", "src/Engine/Scanner.cs")
+        git("-c", "commit.gpgsign=false", "commit", "-m", "scan change")
+        self.assertEqual({"src/Engine/Scanner.cs"}, check.changed_files("staging", "HEAD", self.root, working=False))
+
 
 if __name__ == "__main__":
     unittest.main()

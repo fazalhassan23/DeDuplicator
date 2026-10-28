@@ -143,7 +143,7 @@ def impact_errors(changed: set[str], declaration: dict, config: dict, root: Path
 
 
 def changed_files(base: str, head: str, root: Path = ROOT, working: bool = True) -> set[str]:
-    commands = [["git", "diff", "--no-renames", "--name-only", "-z", base, head]]
+    commands = [["git", "diff", "--no-renames", "--name-only", "-z", "--merge-base", base, head]]
     if working:
         commands += [["git", "diff", "--name-only", "-z", head], ["git", "ls-files", "--others", "--exclude-standard", "-z"]]
     result = set()

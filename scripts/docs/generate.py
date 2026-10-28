@@ -21,7 +21,8 @@ def relocate_links(text: str, source: Path, destination: Path) -> str:
         if parsed.scheme or parsed.netloc or not parsed.path:
             return match[0]
         absolute = (source / unquote(parsed.path)).resolve()
-        relative = os.path.relpath(absolute, destination).replace("\\", "/")
+        # Resolve both sides: hosted Windows runners can expose TEMP via an 8.3 alias.
+        relative = os.path.relpath(absolute, destination.resolve()).replace("\\", "/")
         url = urlunsplit(("", "", quote(relative, safe="/.-_"), parsed.query, parsed.fragment))
         return "](" + url + ")"
     return re.sub(r"\]\(([^\s)]+)\)", replace, text)
