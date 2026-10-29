@@ -1,0 +1,15 @@
+{
+  "name": "deduplicator-documentation",
+  "private": true,
+  "description": "Pinned Markdown and Mermaid validation tools; not application dependencies",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "docs:check": "python scripts/docs/check.py",
+    "docs:generate": "python scripts/docs/generate.py --write",
+    "docs:test": "python -m unittest discover -s scripts/docs/tests -v"
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "11.17.0",
+    "markdownlint-cli2": "0.24.0"
+  }
+}

@@ -1,0 +1,1 @@
+Harden reviewed cleanup with verified recycling and journal restore, locked cross-volume destinations, transactional schema upgrades, validated profiles, atomic exports and busy-state protection; add native-window workflow regressions, phase timing and Windows build/test/package CI.

@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>WinExe</OutputType><UseWPF>true</UseWPF><ApplicationManifest>app.manifest</ApplicationManifest></PropertyGroup><ItemGroup><ProjectReference Include="../DeDuplicator.Infrastructure/DeDuplicator.Infrastructure.csproj"/><PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0"/></ItemGroup></Project>
