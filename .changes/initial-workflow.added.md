@@ -1,1 +1,0 @@
-Find exact duplicate contents across different filenames, review keeper selections, and quarantine or restore redundant files through a durable local journal. Recycle Bin execution remains unavailable. See [PR #1](https://github.com/fazalhassan23/DeDuplicator/pull/1) and the [safety guide](../docs/safety-and-recovery.md).
