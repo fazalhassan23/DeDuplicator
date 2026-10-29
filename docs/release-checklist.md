@@ -17,4 +17,4 @@ Use this record during explicitly requested preparation. Unchecked items remain 
 
 There is no automated publishing workflow. This checklist and documentation checks never authorize main, tags or publication. See [versioning](versioning-and-releases.md).
 
-The 2026-10-29 Windows 11 prerelease finalization has a separate [candidate status](candidate-status.md). This generic checklist remains reusable; do not interpret it as completed production certification. Windows 10 qualification is deferred, and main/tag/publication items remain unauthorized.
+The 2026-10-29 Windows 11 prerelease finalization has a separate [candidate status](candidate-status.md). This generic checklist remains reusable; do not interpret it as completed production certification. Windows 10 qualification is deferred. The user authorized main integration on 2026-10-29; tags and publication remain unauthorized. Check the integration PR for its actual merge status.
