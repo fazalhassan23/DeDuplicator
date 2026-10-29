@@ -1,0 +1,1 @@
+Scan and safely quarantine files on local exFAT volumes without assuming NTFS ACLs or alternate streams. Real-volume qualification covers verified transfers to NTFS and back; unavailable recycling retains staging for explicit recovery.

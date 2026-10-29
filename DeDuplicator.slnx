@@ -1,0 +1,1 @@
+<Solution><Folder Name="/src/"><Project Path="src/DeDuplicator.Core/DeDuplicator.Core.csproj"/><Project Path="src/DeDuplicator.Infrastructure/DeDuplicator.Infrastructure.csproj"/><Project Path="src/DeDuplicator.App/DeDuplicator.App.csproj"/></Folder><Folder Name="/tests/"><Project Path="tests/DeDuplicator.Tests/DeDuplicator.Tests.csproj"/></Folder></Solution>

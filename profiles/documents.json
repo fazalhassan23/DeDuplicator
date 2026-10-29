@@ -1,0 +1,11 @@
+{
+  "Roots": [],
+  "IncludedExtensions": [".pdf", ".docx", ".xlsx", ".txt"],
+  "MinimumSize": 1,
+  "IncludeEmpty": false,
+  "IncludeHidden": false,
+  "IncludeSystem": false,
+  "AllowNetwork": false,
+  "AllowCloudHydration": false,
+  "Sample": true
+}

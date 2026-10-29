@@ -1,0 +1,21 @@
+{
+  "required_documents": [
+    "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md",
+    "docs/architecture.md", "docs/schema.md", "docs/scanning-and-comparison.md",
+    "docs/diagrams.md", "docs/safety-and-recovery.md", "docs/configuration.md",
+    "docs/development.md", "docs/testing.md", "docs/git-workflow.md",
+    "docs/versioning-and-releases.md", "docs/user-guide.md", "docs/troubleshooting.md",
+    "docs/decisions/0001-local-verification.md", "docs/release-checklist.md"
+  ],
+  "rules": [
+    { "id": "scanning", "paths": ["src/**/Scanner.cs", "src/**/Scanning/**", "src/**/Comparison/**", "src/**/NativeFile.cs"], "documents": ["docs/scanning-and-comparison.md", "docs/diagrams.md", "docs/testing.md"], "user_visible": true },
+    { "id": "persistence", "paths": ["src/**/ScanStore.cs", "src/**/Persistence/**", "src/**/Migrations/**", "migrations/**"], "documents": ["docs/schema.md", "docs/diagrams.md", "docs/architecture.md", "docs/testing.md"], "schema": true },
+    { "id": "cleanup", "paths": ["src/**/CleanupService.cs", "src/**/ActionPlanning/**", "src/**/Quarantine/**"], "documents": ["docs/safety-and-recovery.md", "docs/user-guide.md", "docs/diagrams.md", "docs/testing.md"], "user_visible": true },
+    { "id": "models-settings", "paths": ["src/**/Models.cs", "src/**/MainViewModel.cs", "profiles/**"], "documents": ["docs/configuration.md", "docs/user-guide.md", "docs/schema.md"], "user_visible": true },
+    { "id": "presentation-export", "paths": ["src/DeDuplicator.App/**", "src/**/ResultExporter.cs"], "documents": ["docs/user-guide.md", "docs/testing.md"], "user_visible": true },
+    { "id": "build-release", "paths": ["**/*.csproj", "*.props", "*.slnx", "global.json", "NuGet.Config", "scripts/build.ps1"], "documents": ["docs/development.md", "README.md", "docs/versioning-and-releases.md"] },
+    { "id": "workflow", "paths": [".github/**", "scripts/docs/**", "package.json", "package-lock.json", ".markdownlint*", "AGENTS.md"], "documents": ["docs/git-workflow.md", "CONTRIBUTING.md", "docs/testing.md"] },
+    { "id": "tests", "paths": ["tests/**"], "documents": ["docs/testing.md"] },
+    { "id": "source-fallback", "paths": ["src/**"], "documents": ["docs/architecture.md", "docs/testing.md"], "user_visible": true }
+  ]
+}
