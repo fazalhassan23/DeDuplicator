@@ -35,3 +35,5 @@ Follow the [Git workflow](docs/git-workflow.md). Use a cohesive branch from curr
 Completed changes require clean local checks, passing required CI, required reviews and resolved actionable feedback. The required status is **Documentation / documentation**. Repository automation has read-only permissions, never approves its own work, and never pushes changes. Main, release tags and publishing require separate explicit user authorization. Use the [release checklist](docs/release-checklist.md) when preparing a release.
 
 Application CI additionally runs the Windows Release build, safety/workflow tests and self-contained package creation with read-only permissions. It retains test reports, performance smoke evidence and a package for 14 days. Passing it does not replace platform qualification or authorize publication.
+
+For filesystem changes, follow [platform qualification](docs/platform-support.md). The real exFAT test is opt-in on an existing volume and reports a skip when absent. Hosted CI retains qualification evidence if supplied; local generated media fixtures and reports remain untracked.

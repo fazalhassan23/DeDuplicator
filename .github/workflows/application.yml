@@ -39,5 +39,6 @@ jobs:
           path: |
             artifacts/test-results/
             artifacts/performance/
+            artifacts/qualification/
             artifacts/DeDuplicator-*-win-x64.zip
           retention-days: 14

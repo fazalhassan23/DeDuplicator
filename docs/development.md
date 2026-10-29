@@ -39,3 +39,5 @@ Open `DeDuplicator.slnx` in a .NET 10-capable Windows IDE and select DeDuplicato
 The current application dependency is [draft PR #1](https://github.com/fazalhassan23/DeDuplicator/pull/1). The documentation branch includes that ancestor so source-based checks can run; it must not be independently merged as a way to bypass that draft's incomplete scope. See [Git workflow](git-workflow.md).
 
 The Windows application workflow runs the same build script with -Package on pull requests. Packaging includes root security, changelog and contributing guidance alongside docs/profiles. Contributor links to source files require the repository checkout. The unsigned package remains a prerelease until release qualifications are met.
+
+Use the [platform support matrix](platform-support.md) to select supported Windows editions/builds. Real exFAT qualification is opt-in through DEDUPLICATOR_EXFAT_ROOT and needs an existing exFAT location plus NTFS temporary storage; the test never formats a volume.

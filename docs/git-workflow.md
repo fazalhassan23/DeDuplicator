@@ -40,3 +40,5 @@ The owner can require the context above with strict/up-to-date checks under **Se
 ## Application validation
 
 The Application workflow runs the Windows build, safety tests and package job for staging/main PRs and merge queues. Actions are pinned to verified commits, checkout credentials are not persisted, and no secrets or publishing permissions are supplied. The Windows build, safety tests and package check is reported separately; the existing required documentation protection remains unchanged. Inspect both results before integration.
+
+Platform qualification reports from existing local exFAT media remain explicit local evidence. Hosted CI reports a real-volume skip when no fixture is configured and retains qualification reports when present; a skipped environment case must never be presented as filesystem certification.

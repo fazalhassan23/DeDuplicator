@@ -25,7 +25,8 @@ flowchart TD
     Eligible -- No --> Issue[Skip or record issue]
     Issue --> Enumerate
     Eligible -- Yes --> Identity[Handle snapshot and physical identity]
-    Identity --> DB[(Persist metadata)]
+    Identity --> Capabilities[Handle volume capabilities govern security and stream checks]
+    Capabilities --> DB[(Persist metadata)]
     DB --> Size{Two physical files of equal length?}
     Size -- No --> Singleton[No singleton content reads]
     Size -- Yes --> Sampling{Samples enabled and at least 1 MiB?}

@@ -35,3 +35,5 @@ Historical results are stale. Rescan historical profile loads saved settings, th
 Export includes all stored duplicate members beyond visible page limits, to a new CSV or JSON file without overwrite. Exports are flushed to an exclusive temporary sibling and published only on success; cancellation/failure never publishes a partial final file. CSV quotes/neutralizes spreadsheet-formula prefixes. Full paths, identities and hashes are sensitive local information; no upload occurs.
 
 Expand activity/issues for outcomes. Diagnostics shows the first 500 issues, journal the latest 1,000 operations and history the latest 100 scans; older database rows are retained. See [troubleshooting](troubleshooting.md).
+
+Consult [platform support](platform-support.md) before installation. The current target is supported Windows 10/11 x64 editions/builds with local NTFS/exFAT; Windows 7 is a separate assessment. On exFAT, unsupported recycling leaves a verified staged copy for explicit recovery. Do not assume Recycle Bin availability on every volume.

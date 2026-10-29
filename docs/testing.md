@@ -43,3 +43,7 @@ File-change mappings only identify review obligations. They cannot prove that an
 ## Performance measurement
 
 Use the reproducible [performance procedure](performance.md) and generated fixtures. Record filesystem, storage type, profile, counts, bytes, wall time, private memory and handle counts. Warm/cold cache results are distinct. Phase timing and database-write overlap are persisted. The generated 2,002-file metadata regression checks all records and timing rows and writes a local JSON report. Million-file qualification remains outstanding; do not label progress counters or a small fixture run as a throughput benchmark.
+
+## Real filesystem qualification
+
+The opt-in ExfatQualificationTests test requires DEDUPLICATOR_EXFAT_ROOT and is explicitly skipped when it is unset. The local run on an existing exFAT D: volume and NTFS temporary volume passed 45 tests with zero skips, including actual cross-volume transfer/restore. The standard hosted run has no exFAT volume configured and reports 44 passes plus one explicit environment skip. No volume is formatted. See [platform support](platform-support.md) for commands and the distinction between target scope and completed OS/device qualification.

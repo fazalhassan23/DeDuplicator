@@ -6,7 +6,7 @@ The current [version](docs/generated/version.md) is an unreleased alpha. The ini
 
 ## Capabilities
 
-- Incremental folder/drive scanning with filters, protections, physical identities and SQLite history.
+- Incremental folder/drive scanning with filters, protections, physical identities and SQLite history; local NTFS/exFAT qualification is recorded in the platform matrix.
 - Sample elimination, complete SHA-256 and byte verification, with cancellation and per-file issues.
 - Paged results, deterministic keeper proposals, overrides and reviewed immutable plans.
 - Revalidated no-overwrite quarantine, verified cross-volume copy/removal and journal-based validated recovery.
@@ -17,7 +17,7 @@ The [user guide](docs/user-guide.md) explains the workflow and [safety/recovery]
 
 ## Installation
 
-No published release/download or signed installer exists yet. Install a .NET 10 SDK on Windows 10/11 x64 and produce an unsigned portable self-contained package:
+No published release/download or signed installer exists yet. Use a supported Windows 10/11 x64 edition/build from the [platform matrix](docs/platform-support.md) and install a .NET 10 SDK and produce an unsigned portable self-contained package:
 
 ```powershell
 ./scripts/build.ps1 -Package
