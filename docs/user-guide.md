@@ -37,3 +37,5 @@ Export includes all stored duplicate members beyond visible page limits, to a ne
 Expand activity/issues for outcomes. Diagnostics shows the first 500 issues, journal the latest 1,000 operations and history the latest 100 scans; older database rows are retained. See [troubleshooting](troubleshooting.md).
 
 Consult [platform support](platform-support.md) before installation. The current target is supported Windows 10/11 x64 editions/builds with local NTFS/exFAT; Windows 7 is a separate assessment. On exFAT, unsupported recycling leaves a verified staged copy for explicit recovery. Do not assume Recycle Bin availability on every volume.
+
+At compact window sizes, scroll the workflow area to reach controls below the visible portion. Ctrl+Tab and Ctrl+Shift+Tab switch workflow tabs while focus is inside the tab content. Execution and restore still require their normal reviewed selection and confirmation; resizing does not execute an action.

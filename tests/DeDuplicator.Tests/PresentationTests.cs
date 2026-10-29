@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -57,6 +58,20 @@ public sealed class PresentationTests
                     Assert.All(model.Rows, row => Assert.Equal("Verified at scan", row.Safety));
                     model.SelectRule.Execute(null); Assert.Single(model.Rows, row => row.Selected);
                     model.Review.Execute(null); var operation = Assert.Single(model.PlanRows);
+                    window.Width = window.MinWidth; window.Height = window.MinHeight;
+                    await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); window.UpdateLayout();
+                    var workflow = Assert.IsType<ScrollViewer>(window.FindName("WorkflowScroll"));
+                    Assert.True(workflow.ScrollableHeight > 0, "Compact workflows must scroll rather than clip review/execute controls.");
+                    foreach (var target in new[] { (Tab: 2, Command: model.Execute), (Tab: 3, Command: model.Restore) })
+                    {
+                        model.Tab = target.Tab; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); window.UpdateLayout();
+                        var control = Descendants<Button>(window).Single(button => ReferenceEquals(button.Command, target.Command));
+                        control.BringIntoView(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); window.UpdateLayout();
+                        var viewport = Descendants<ScrollContentPresenter>(workflow).First(presenter => ReferenceEquals(presenter.TemplatedParent, workflow));
+                        Rect bounds = control.TransformToAncestor(viewport).TransformBounds(new Rect(control.RenderSize));
+                        Assert.True(new Rect(viewport.RenderSize).Contains(bounds), "Cleanup/recovery controls must be fully reachable in the compact viewport.");
+                    }
+                    window.Width = 1320; window.Height = 860; model.Tab = 2;
                     await ((AsyncCommand)model.Execute).ExecuteAsync();
                     Assert.True(File.Exists(operation.Source.Path)); Assert.Empty(model.Journal);
                     dialogs.Confirm = true;
@@ -102,5 +117,15 @@ public sealed class PresentationTests
         }) { IsBackground = true };
         thread.SetApartmentState(ApartmentState.STA); thread.Start();
         await completion.Task.WaitAsync(TimeSpan.FromSeconds(60));
+    }
+
+    private static IEnumerable<T> Descendants<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, index);
+            if (child is T match) yield return match;
+            foreach (var descendant in Descendants<T>(child)) yield return descendant;
+        }
     }
 }

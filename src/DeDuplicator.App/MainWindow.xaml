@@ -4,7 +4,8 @@
 <Grid Grid.Column="1" Margin="26,22"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
 <StackPanel><TextBlock Text="Make room for what matters." FontSize="28" FontWeight="SemiBold"/><TextBlock Text="Find identical bytes across different names and locations." Foreground="#526B7A" Margin="0,7,0,20"/></StackPanel>
 <Border Grid.Row="1" Background="White" Padding="16" Margin="0,0,0,16" CornerRadius="8"><StackPanel><TextBlock Text="{Binding Status}" FontWeight="SemiBold" TextWrapping="Wrap"/><TextBlock Text="{Binding ProgressText}" Foreground="#526B7A" Margin="0,6" TextWrapping="Wrap"/><ProgressBar Height="3" IsIndeterminate="{Binding Busy}"/><WrapPanel HorizontalAlignment="Right" Margin="0,8,0,0"><Button Content="Scan and verify" Command="{Binding Scan}" Background="#14695F" Foreground="White"/><Button Content="Cancel current operation" Command="{Binding Cancel}"/></WrapPanel></StackPanel></Border>
-<TabControl Grid.Row="2" SelectedIndex="{Binding Tab}">
+<ScrollViewer x:Name="WorkflowScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Workflow scroll area">
+<TabControl MinHeight="460" Height="{Binding ViewportHeight, ElementName=WorkflowScroll}" SelectedIndex="{Binding Tab}">
 <TabItem Header=" Locations &amp; settings "><ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="18">
 <TextBlock Text="Where should we look?" FontSize="21" FontWeight="SemiBold"/><TextBlock Text="One folder or drive per line. Overlapping locations are scanned once." Margin="0,8"/>
 <TextBox Text="{Binding Roots, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="95" AutomationProperties.Name="Selected scan locations"/>
@@ -45,5 +46,6 @@
 <Button Grid.Row="4" Content="Restore selected quarantine entry…" Command="{Binding Restore}" HorizontalAlignment="Left" Margin="0,12"/>
 </Grid></TabItem>
 </TabControl>
+</ScrollViewer>
 <Expander Grid.Row="3" Header="Activity and scan issues" Margin="0,12,0,0"><TextBox Text="{Binding Details}" IsReadOnly="True" AcceptsReturn="True" MaxHeight="150" VerticalScrollBarVisibility="Auto" AutomationProperties.Name="Operation and scan details"/></Expander>
 </Grid></Grid></Window>

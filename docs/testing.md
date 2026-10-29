@@ -47,3 +47,5 @@ Use the reproducible [performance procedure](performance.md) and generated fixtu
 ## Real filesystem qualification
 
 The opt-in ExfatQualificationTests test requires DEDUPLICATOR_EXFAT_ROOT and is explicitly skipped when it is unset. The local run on an existing exFAT D: volume and NTFS temporary volume passed 45 tests with zero skips, including actual cross-volume transfer/restore. The standard hosted run has no exFAT volume configured and reports 44 passes plus one explicit environment skip. No volume is formatted. See [platform support](platform-support.md) for commands and the distinction between target scope and completed OS/device qualification.
+
+The native-window regression now resizes to the declared minimum 980 by 650, brings execution and restore controls into view, and asserts their full bounds lie inside the scrolling viewport. It guards the reproduced compact-layout clipping defect. Desktop follow-up verified actual border resizing, maximize/restore, forward/reverse workflow tab switching, visible execution/restore controls after scrolling and Alt+F4 close. This is basic keyboard/layout coverage, not screen-reader or DPI certification.

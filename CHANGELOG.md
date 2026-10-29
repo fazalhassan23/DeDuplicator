@@ -16,6 +16,7 @@ User-facing changes follow Semantic Versioning. Entries below are generated from
 
 ### Fixed
 
+- Keep action-plan execution and journal restore controls reachable when the window is reduced to its minimum size by allowing the workflow area to scroll vertically.
 - Scan and safely quarantine files on local exFAT volumes without assuming NTFS ACLs or alternate streams. Real-volume qualification covers verified transfers to NTFS and back; unavailable recycling retains staging for explicit recovery.
 - Harden reviewed cleanup with verified recycling and journal restore, locked cross-volume destinations, transactional schema upgrades, validated profiles, atomic exports and busy-state protection; add native-window workflow regressions, phase timing and Windows build/test/package CI.
 

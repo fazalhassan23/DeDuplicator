@@ -6,7 +6,7 @@ The first-release target is Windows 10/11 x64 with local NTFS and exFAT. This is
 
 Microsoft's [.NET on Windows table](https://learn.microsoft.com/dotnet/core/install/windows) lists supported Windows 11 versions and Windows 10 LTSC/Enterprise versions. Verify the exact edition/build against that table before release; do not promise all Windows 10 installations. .NET 10 does not support Windows 7. A self-contained package includes the runtime but does not extend its operating-system compatibility. Legacy support would require a separately reviewed runtime/dependency/native API strategy and tests on Windows 7; no such build exists today.
 
-Local automated and desktop smoke evidence is from Windows build 26200. A separate supported Windows 10 machine/VM and additional Windows 11 target builds remain qualification requirements. CI Windows runners add build/test evidence, not a substitute for that matrix. See [validation](validation.md).
+Local automated and desktop smoke evidence is from Windows build 26200. A separate supported Windows 10 machine/VM and additional Windows 11 target builds remain qualification requirements. The user confirmed no Windows 10 test environment is available as of 2026-10-29; that row remains pending. CI Windows runners add build/test evidence, not a substitute for that matrix. See [validation](validation.md).
 
 ## Filesystems
 
