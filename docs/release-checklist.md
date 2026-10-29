@@ -16,3 +16,5 @@ Use this record during explicitly requested preparation. Unchecked items remain 
 - [ ] Only with explicit tag/publication authorization, create the immutable tag and publish reviewed notes/package; verify and report links and commit IDs.
 
 There is no automated publishing workflow. This checklist and documentation checks never authorize main, tags or publication. See [versioning](versioning-and-releases.md).
+
+The 2026-10-29 Windows 11 prerelease finalization has a separate [candidate status](candidate-status.md). This generic checklist remains reusable; do not interpret it as completed production certification. Windows 10 qualification is deferred, and main/tag/publication items remain unauthorized.

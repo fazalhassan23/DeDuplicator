@@ -2,7 +2,9 @@
 
 A local Windows application for finding exact duplicates by primary file contents. Different names can match; equal names, timestamps or extensions never prove equality. SHA-256 candidates require complete byte verification.
 
-The current [version](docs/generated/version.md) is an unreleased alpha. The initial app remains [draft PR #1](https://github.com/fazalhassan23/DeDuplicator/pull/1). Reviewed quarantine, real Windows recycling and journal restore pass fixture tests; broader platform qualification remains incomplete. Read [limitations](docs/known-limitations.md) before using real files.
+The current [version](docs/generated/version.md) is an unreleased alpha. The consolidated implementation and finalization are tracked in [PR #3](https://github.com/fazalhassan23/DeDuplicator/pull/3); earlier PRs #1 and #2 are included in its history. Reviewed quarantine, real Windows recycling and journal restore pass fixture tests; broader platform qualification remains incomplete. Read [limitations](docs/known-limitations.md) before using real files.
+
+The current candidate scope is Windows 11 x64 with local NTFS/exFAT; Windows 10 qualification is deferred and Windows 7 is a separate assessment. See [candidate status](docs/candidate-status.md) for verified checks and remaining limitations.
 
 ## Capabilities
 
@@ -17,7 +19,7 @@ The [user guide](docs/user-guide.md) explains the workflow and [safety/recovery]
 
 ## Installation
 
-No published release/download or signed installer exists yet. Use a supported Windows 10/11 x64 edition/build from the [platform matrix](docs/platform-support.md) and install a .NET 10 SDK and produce an unsigned portable self-contained package:
+No published release/download or signed installer exists yet. Use a supported Windows 11 x64 edition/build from the [platform matrix](docs/platform-support.md) and install a .NET 10 SDK and produce an unsigned portable self-contained package:
 
 ```powershell
 ./scripts/build.ps1 -Package
