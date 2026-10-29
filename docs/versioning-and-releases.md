@@ -13,7 +13,7 @@ Semantic Versioning uses MAJOR.MINOR.PATCH: MAJOR for breaking supported contrac
 | Concept | Current behavior |
 | --- | --- |
 | Application | Shared Version.props SemVer; derived title, assembly metadata and package name. |
-| Database schema | Unversioned initializer; user_version 0 and no migration runner. See [schema](schema.md#migration-and-compatibility-strategy). |
+| Database schema | Numbered embedded migrations; user_version 2. Receipt JSON has FormatVersion 1; profiles/exports remain unversioned. See [schema](schema.md#migration-and-compatibility-strategy). |
 | Profile/export formats | Unversioned JSON/CSV with no version field; changes need compatibility notes and tests. |
 | CI build | Git SHA and workflow run ID, not an automatic public version bump. SDK informational metadata may append a revision. |
 

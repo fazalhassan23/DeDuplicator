@@ -18,9 +18,11 @@ The build script runs Release tests and writes `artifacts/test-results/safety.tr
 | Cleanup safety | Stale/missing keepers, protected paths, keeper-removal rejection, occupied quarantine/restore destinations, changed quarantine content and partial failures. |
 | Transfer/recovery | Inject ERROR_NOT_SAME_DEVICE at the rename boundary, then exercise real copy, flush, comparison, promotion and source removal; injected interruption retains source and partial file. A second physical volume is not claimed. |
 | Paging/export | 501-member group browsing/export, subset-keeper preservation, hidden provisional singletons, JSON/CSV and formula-injection cases. |
-| Presentation | STA resource loading and offscreen rendering of four WPF workflow tabs using actual generated scan fixtures. These are not interactive keyboard/screen-reader tests. |
+| Presentation | A native MainWindow on a live STA dispatcher exercises scanning, keeper planning, declined/accepted confirmation, quarantine, busy-state refresh, restore, exports, profile save/load, malformed profiles, stale history and cancellation. Four tabs are rendered. Dialog choices are injected; real common dialogs, keyboard and screen-reader testing remain outstanding. |
 
 No automatic test requires elevation. There is no broad access-control manipulation, real remote disconnect, cloud-provider hydration, low-disk or removable-volume qualification. [Known limitations](known-limitations.md) are explicit about environmental gaps.
+
+Additional hardening coverage includes real local Windows Recycle Bin and journal restore/conflict refusal, unavailable-recycler staging recovery, malformed profiles, atomic export failure, cross-volume destination locking, legacy/future/unknown schemas, failed-upgrade rollback and per-connection FULL/FK settings and exclusive application-data leases. Application CI runs the same build/test/package script on Windows and retains TRX and performance reports. A Shell-feature failure is a failed test, not silently skipped qualification.
 
 ## Documentation gate and its own tests
 
@@ -40,4 +42,4 @@ File-change mappings only identify review obligations. They cannot prove that an
 
 ## Performance measurement
 
-Use the reproducible [performance procedure](performance.md) and generated fixtures. Record filesystem, storage type, profile, counts, bytes, wall time, private memory and handle counts. Warm/cold cache results are distinct. Separate persisted phase timing and million-file qualification are not implemented; do not label progress counters or a small fixture run as a throughput benchmark.
+Use the reproducible [performance procedure](performance.md) and generated fixtures. Record filesystem, storage type, profile, counts, bytes, wall time, private memory and handle counts. Warm/cold cache results are distinct. Phase timing and database-write overlap are persisted. The generated 2,002-file metadata regression checks all records and timing rows and writes a local JSON report. Million-file qualification remains outstanding; do not label progress counters or a small fixture run as a throughput benchmark.

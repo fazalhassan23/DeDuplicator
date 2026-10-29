@@ -15,20 +15,20 @@ public sealed class NativeFile : IDisposable
     {
         Stream = new FileStream(handle, FileAccess.Read, 131072, false);
         Record = ReadRecord(path, handle);
-        Security = ReadSecurity(path);
+        Security = ReadSecurity(handle);
     }
-    public static NativeFile Open(string path, bool forAction = false)
+    public static NativeFile Open(string path, bool forAction = false, bool allowDeleteSharing = false)
     {
-        var handle = CreateFileW(path, 0x80000000u | (forAction ? 0x10000u : 0), 1, IntPtr.Zero, 3, 0x00200000u | 0x08000000u, IntPtr.Zero);
+        var handle = CreateFileW(path, 0x80000000u | (forAction ? 0x10000u : 0), allowDeleteSharing ? 5u : 1u, IntPtr.Zero, 3, 0x00200000u | 0x08000000u, IntPtr.Zero);
         if (handle.IsInvalid) { handle.Dispose(); throw new Win32Exception(Marshal.GetLastWin32Error()); }
         try { return new NativeFile(path, handle); } catch { handle.Dispose(); throw; }
     }
     public void CheckStable()
     {
-        if (ReadRecord(Record.Path, Stream.SafeFileHandle) != Record) throw new IOException("File changed during reading.");
+        if (ReadRecord(Record.Path, Stream.SafeFileHandle) != Record || ReadSecurity(Stream.SafeFileHandle) != Security) throw new IOException("File or permissions changed during reading.");
     }
     public static bool SameSnapshot(FileRecord a, FileRecord b) => a.Identity == b.Identity && a.Length == b.Length && a.ModifiedUtc == b.ModifiedUtc && a.Attributes == b.Attributes && a.Links == b.Links;
-    public static async Task<bool> EqualAsync(NativeFile a, NativeFile b, CancellationToken token)
+    public static async Task<bool> EqualAsync(NativeFile a, NativeFile b, CancellationToken token, Action<long>? consumed = null)
     {
         if (a.Record.Length != b.Record.Length) return false;
         a.Stream.Position = b.Stream.Position = 0;
@@ -36,11 +36,14 @@ public sealed class NativeFile : IDisposable
         while (true)
         {
             int n = await a.Stream.ReadAsync(left, token);
+            consumed?.Invoke(n);
             if (n == 0) break;
-            await b.Stream.ReadExactlyAsync(right.AsMemory(0, n), token);
+            long before = b.Stream.Position;
+            try { await b.Stream.ReadExactlyAsync(right.AsMemory(0, n), token); }
+            finally { consumed?.Invoke(b.Stream.Position - before); }
             if (!left.AsSpan(0, n).SequenceEqual(right.AsSpan(0, n))) return false;
         }
-        if (b.Stream.ReadByte() != -1) return false;
+        if (b.Stream.ReadByte() != -1) { consumed?.Invoke(1); return false; }
         a.CheckStable(); b.CheckStable();
         return true;
     }
@@ -84,12 +87,12 @@ public sealed class NativeFile : IDisposable
         try { do { if (data.Name != "::$DATA") return true; } while (FindNextStreamW(handle, out data)); return Marshal.GetLastWin32Error() != 38; }
         finally { FindClose(handle); }
     }
-    private static string ReadSecurity(string path)
+    private static string ReadSecurity(SafeFileHandle handle)
     {
-        GetFileSecurityW(path, 7, null, 0, out uint length);
+        GetKernelObjectSecurity(handle, 7, null, 0, out uint length);
         if (length == 0) throw new Win32Exception(Marshal.GetLastWin32Error());
         byte[] descriptor = new byte[length];
-        if (!GetFileSecurityW(path, 7, descriptor, length, out _)) throw new Win32Exception(Marshal.GetLastWin32Error());
+        if (!GetKernelObjectSecurity(handle, 7, descriptor, length, out _)) throw new Win32Exception(Marshal.GetLastWin32Error());
         return Convert.ToHexString(SHA256.HashData(descriptor));
     }
     public void Dispose() => Stream.Dispose();
@@ -102,5 +105,5 @@ public sealed class NativeFile : IDisposable
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern IntPtr FindFirstStreamW(string path, int level, out StreamData data, uint flags);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern bool FindNextStreamW(IntPtr handle, out StreamData data);
     [DllImport("kernel32.dll")] private static extern bool FindClose(IntPtr handle);
-    [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern bool GetFileSecurityW(string path, uint info, byte[]? descriptor, uint length, out uint required);
+    [DllImport("advapi32.dll", SetLastError = true)] private static extern bool GetKernelObjectSecurity(SafeFileHandle handle, uint info, byte[]? descriptor, uint length, out uint required);
 }

@@ -16,7 +16,7 @@ try {
     if ($Package) {
         & $dotnet publish src/DeDuplicator.App/DeDuplicator.App.csproj -c Release -r win-x64 --self-contained true -o artifacts/DeDuplicator-win-x64
         if ($LASTEXITCODE) { throw 'Publish failed.' }
-        Copy-Item README.md artifacts/DeDuplicator-win-x64
+        Copy-Item README.md, SECURITY.md, CHANGELOG.md, CONTRIBUTING.md artifacts/DeDuplicator-win-x64
         Copy-Item docs, profiles -Destination artifacts/DeDuplicator-win-x64 -Recurse -Force
         $releaseVersion = & $dotnet msbuild src/DeDuplicator.App/DeDuplicator.App.csproj -getProperty:Version
         if ($LASTEXITCODE -or [string]::IsNullOrWhiteSpace($releaseVersion)) { throw 'Could not evaluate package version.' }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Diagnostics;
 using DeDuplicator.Core;
 using Microsoft.Data.Sqlite;
 
@@ -7,36 +8,59 @@ namespace DeDuplicator.Infrastructure;
 public sealed class ScanStore
 {
     private readonly string connectionString;
+    private long writeTicks;
+    public long WriteTicks => Interlocked.Read(ref writeTicks);
     public ScanStore(string path)
     {
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(path))!);
-        connectionString = new SqliteConnectionStringBuilder { DataSource = path }.ToString();
+        connectionString = new SqliteConnectionStringBuilder { DataSource = path, DefaultTimeout = 5, ForeignKeys = true }.ToString();
         using var db = Open();
+        SchemaMigrator.Upgrade(db);
         using var cmd = db.CreateCommand();
         cmd.CommandText = """
             PRAGMA journal_mode=WAL;
             PRAGMA synchronous=FULL;
-            CREATE TABLE IF NOT EXISTS scans(id TEXT PRIMARY KEY, started TEXT, state TEXT, profile TEXT);
-            CREATE TABLE IF NOT EXISTS files(id INTEGER PRIMARY KEY, scan TEXT, path TEXT, identity TEXT, length INTEGER, record TEXT, hash TEXT, sample TEXT, group_id INTEGER);
-            CREATE UNIQUE INDEX IF NOT EXISTS physical ON files(scan,identity);
-            CREATE INDEX IF NOT EXISTS sizes ON files(scan,length);
-            CREATE INDEX IF NOT EXISTS hashes ON files(scan,length,hash);
-            CREATE INDEX IF NOT EXISTS groups ON files(scan,group_id);
-            CREATE TABLE IF NOT EXISTS issues(id INTEGER PRIMARY KEY, scan TEXT, path TEXT, reason TEXT);
-            CREATE TABLE IF NOT EXISTS journal(id TEXT PRIMARY KEY, plan TEXT, source TEXT, destination TEXT, action TEXT, state TEXT, detail TEXT, record TEXT, created TEXT, hash TEXT);
             """;
         cmd.ExecuteNonQuery();
     }
-    public SqliteConnection Open() { var db = new SqliteConnection(connectionString); db.Open(); return db; }
+    public SqliteConnection Open()
+    {
+        var db = new SqliteConnection(connectionString);
+        try { db.Open(); using var command = db.CreateCommand(); command.CommandText = "PRAGMA synchronous=FULL"; command.ExecuteNonQuery(); return db; }
+        catch { db.Dispose(); throw; }
+    }
     public void Execute(string sql, params (string, object?)[] parameters)
     {
+        long started = Stopwatch.GetTimestamp();
+        try
+        {
         using var db = Open(); using var cmd = db.CreateCommand(); cmd.CommandText = sql;
         foreach (var (key, value) in parameters) cmd.Parameters.AddWithValue(key, value ?? DBNull.Value);
         cmd.ExecuteNonQuery();
+        }
+        finally { Interlocked.Add(ref writeTicks, Stopwatch.GetTimestamp() - started); }
     }
     public void Start(string id, ScanProfile profile) => Execute("INSERT INTO scans VALUES($id,$time,'Running',$profile)", ("$id", id), ("$time", DateTime.UtcNow.ToString("O")), ("$profile", JsonSerializer.Serialize(profile)));
     public void Issue(string scan, string path, string reason) => Execute("INSERT INTO issues(scan,path,reason) VALUES($scan,$path,$reason)", ("$scan", scan), ("$path", path), ("$reason", reason));
     public void Add(string scan, FileRecord file) => Execute("INSERT OR IGNORE INTO files(scan,path,identity,length,record) VALUES($scan,$path,$identity,$length,$record)", ("$scan", scan), ("$path", file.Path), ("$identity", file.Identity), ("$length", file.Length), ("$record", JsonSerializer.Serialize(file)));
+    public void AddBatch(string scan, IReadOnlyList<FileRecord> files)
+    {
+        long started = Stopwatch.GetTimestamp();
+        try
+        {
+            using var db = Open(); using var transaction = db.BeginTransaction(); using var command = db.CreateCommand(); command.Transaction = transaction;
+            command.CommandText = "INSERT OR IGNORE INTO files(scan,path,identity,length,record) VALUES($scan,$path,$identity,$length,$record)";
+            command.Parameters.AddWithValue("$scan", scan);
+            foreach (string name in new[] { "$path", "$identity", "$length", "$record" }) command.Parameters.Add(new SqliteParameter(name, null));
+            foreach (var file in files)
+            {
+                command.Parameters["$path"].Value = file.Path; command.Parameters["$identity"].Value = file.Identity;
+                command.Parameters["$length"].Value = file.Length; command.Parameters["$record"].Value = JsonSerializer.Serialize(file); command.ExecuteNonQuery();
+            }
+            transaction.Commit();
+        }
+        finally { Interlocked.Add(ref writeTicks, Stopwatch.GetTimestamp() - started); }
+    }
     public IEnumerable<long> CandidateSizes(string scan)
     {
         using var db = Open(); using var cmd = db.CreateCommand(); cmd.CommandText = "SELECT length FROM files WHERE scan=$scan GROUP BY length HAVING count(*)>1 ORDER BY length"; cmd.Parameters.AddWithValue("$scan", scan);
@@ -83,5 +107,5 @@ public sealed class ScanStore
         using var db = Open(); using var cmd = db.CreateCommand(); cmd.CommandText = "SELECT path,reason FROM issues WHERE scan=$scan ORDER BY id LIMIT 500"; cmd.Parameters.AddWithValue("$scan", scan);
         using var reader = cmd.ExecuteReader(); var lines = new List<string>(); while (reader.Read()) lines.Add(reader.GetString(0) + ": " + reader.GetString(1)); return string.Join(Environment.NewLine, lines);
     }
-    public void Recover() { Execute("UPDATE scans SET state='Interrupted; rescan required' WHERE state='Running'"); Execute("UPDATE journal SET state='Interrupted; inspect destination before retry' WHERE state IN ('Started','Copied','Restoring')"); }
+    public void Recover() { Execute("UPDATE scans SET state='Interrupted; rescan required' WHERE state='Running'"); Execute("UPDATE journal SET state='Interrupted; inspect destination before retry' WHERE state IN ('Started','Copied','Restoring','Staged for recycling')"); }
 }

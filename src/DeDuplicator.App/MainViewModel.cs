@@ -26,6 +26,8 @@ public sealed class MainViewModel : Observable
     private readonly Scanner scanner;
     private readonly CleanupService cleanup;
     private readonly ILogger<MainViewModel> logger;
+    private readonly IUserDialogs dialogs;
+    public Task Initialization { get; }
     private CancellationTokenSource? cancellation;
     private ScanProfile? scannedProfile;
     private string? scanId;
@@ -97,13 +99,14 @@ public sealed class MainViewModel : Observable
     public ICommand OpenFolder { get; }
     public ICommand CopyPath { get; }
 
-    public MainViewModel(ScanStore store, Scanner scanner, CleanupService cleanup, ILogger<MainViewModel> logger)
+    public MainViewModel(ScanStore store, Scanner scanner, CleanupService cleanup, ILogger<MainViewModel> logger, IUserDialogs? dialogs = null)
     {
         this.store = store; this.scanner = scanner; this.cleanup = cleanup; this.logger = logger;
+        this.dialogs = dialogs ?? new WindowsUserDialogs();
         bool Idle() => !Busy;
         Command Sync(Action action) => new(_ => { try { action(); } catch (Exception ex) { Failed(ex); } }, Idle);
-        AsyncCommand Async(Func<Task> action) => new(async () => { Busy = true; try { await action(); } finally { Busy = false; } }, Failed, Idle);
-        AddFolder = Sync(() => { var dialog = new OpenFolderDialog { Title = "Choose a folder or drive", Multiselect = true }; if (dialog.ShowDialog() == true) Roots = string.Join(Environment.NewLine, Lines(Roots).Concat(dialog.FolderNames)); });
+        AsyncCommand Async(Func<Task> action) => new(async () => { Busy = true; try { await action(); } catch (OperationCanceledException) { Status = "Cancelled — inspect the journal for any partial file operations."; throw; } finally { Busy = false; } }, Failed, Idle);
+        AddFolder = Sync(() => Roots = string.Join(Environment.NewLine, Lines(Roots).Concat(this.dialogs.ChooseFolders())));
         Scan = Async(ScanAsync);
         Cancel = new Command(_ => cancellation?.Cancel(), () => Busy);
         Refresh = Async(async () => { page = 0; await LoadResultsAsync(); });
@@ -120,16 +123,16 @@ public sealed class MainViewModel : Observable
         RefreshHistory = Async(async () => await LoadHistoryAsync());
         ViewHistory = Async(async () => { if (SelectedHistory is null) return; scanId = SelectedHistory.Id; scannedProfile = ReadProfile(scanId); fresh = false; page = 0; InvalidatePlan(); await LoadResultsAsync(); Tab = 1; Status = "Historical results — rescan required before planning"; });
         ResumeHistory = Sync(() => { if (SelectedHistory is null) return; ApplyProfile(ReadProfile(SelectedHistory.Id)); Tab = 0; Status = "Historical settings loaded. Scan again to revalidate all filesystem assumptions."; });
-        SaveProfile = Async(async () => { var profile = Profile(); var dialog = new SaveFileDialog { Filter = "Scan profile|*.json" }; if (dialog.ShowDialog() == true) await File.WriteAllTextAsync(dialog.FileName, JsonSerializer.Serialize(profile, new JsonSerializerOptions { WriteIndented = true })); });
-        LoadProfile = Async(async () => { var dialog = new OpenFileDialog { Filter = "Scan profile|*.json" }; if (dialog.ShowDialog() == true) ApplyProfile(JsonSerializer.Deserialize<ScanProfile>(await File.ReadAllTextAsync(dialog.FileName)) ?? throw new IOException("Invalid profile.")); });
+        SaveProfile = Async(async () => { var profile = Profile(); string? path = this.dialogs.SaveProfile(); if (path != null) await File.WriteAllTextAsync(path, JsonSerializer.Serialize(profile, new JsonSerializerOptions { WriteIndented = true })); });
+        LoadProfile = Async(async () => { string? path = this.dialogs.OpenProfile(); if (path != null) { if (new FileInfo(path).Length > 1048576) throw new IOException("Profile files must be at most 1 MiB."); ApplyProfile(JsonSerializer.Deserialize<ScanProfile>(await File.ReadAllTextAsync(path)) ?? throw new IOException("Invalid profile.")); } });
         CopyPath = Sync(() => { if (SelectedRow != null) Clipboard.SetText(SelectedRow.File.Path); });
         OpenFolder = Sync(() => { if (SelectedRow != null) Process.Start(new ProcessStartInfo("explorer.exe") { Arguments = "/select,\"" + SelectedRow.File.Path + "\"", UseShellExecute = true }); });
         OpenFile = Sync(() =>
         {
             if (SelectedRow is not { } row) return;
-            if (MessageBox.Show("Open this file in its associated application? Only open files you trust.\n\n" + row.File.Path, "Open file", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes) Process.Start(new ProcessStartInfo(row.File.Path) { UseShellExecute = true });
+            if (this.dialogs.ConfirmOpen(row.File.Path)) Process.Start(new ProcessStartInfo(row.File.Path) { UseShellExecute = true });
         });
-        _ = InitializeAsync();
+        Initialization = InitializeAsync();
     }
     private async Task InitializeAsync() { try { await LoadHistoryAsync(); } catch (Exception ex) { Failed(ex); } }
     private void Failed(Exception ex) { logger.LogError("Application operation failed ({Type}): {Message}", ex.GetType().Name, ex.Message); Status = "Operation could not complete"; Details = ex.Message; }
@@ -137,12 +140,14 @@ public sealed class MainViewModel : Observable
     private static string[] Extensions(string text) => text.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.StartsWith('.') ? x : "." + x).ToArray();
     private ScanProfile Profile()
     {
-        long min = long.Parse(Minimum), max = string.IsNullOrWhiteSpace(Maximum) ? long.MaxValue : long.Parse(Maximum);
+        if (!long.TryParse(Minimum, out long min) || !string.IsNullOrWhiteSpace(Maximum) && !long.TryParse(Maximum, out _)) throw new IOException("Enter whole numbers for minimum and maximum file sizes.");
+        long max = string.IsNullOrWhiteSpace(Maximum) ? long.MaxValue : long.Parse(Maximum);
         if (min < 0 || max < min) throw new IOException("Check the minimum and maximum sizes.");
-        return new() { Roots = PathPolicy.Roots(Lines(Roots)), MinimumSize = min, MaximumSize = max, IncludeEmpty = IncludeEmpty, IncludeHidden = IncludeHidden, IncludeSystem = IncludeSystem, AllowNetwork = AllowNetwork, AllowCloudHydration = AllowCloud, Sample = Sample, IncludedExtensions = Extensions(IncludedExtensions), ExcludedExtensions = Extensions(ExcludedExtensions), ExcludedDirectories = Lines(Exclusions).Select(PathPolicy.Normalize).ToArray(), ProtectedDirectories = Lines(Protections).Select(PathPolicy.Normalize).ToArray() };
+        return ProfileValidation.Validate(new() { Roots = PathPolicy.Roots(Lines(Roots)), MinimumSize = min, MaximumSize = max, IncludeEmpty = IncludeEmpty, IncludeHidden = IncludeHidden, IncludeSystem = IncludeSystem, AllowNetwork = AllowNetwork, AllowCloudHydration = AllowCloud, Sample = Sample, IncludedExtensions = Extensions(IncludedExtensions), ExcludedExtensions = Extensions(ExcludedExtensions), ExcludedDirectories = Lines(Exclusions).Select(PathPolicy.Normalize).ToArray(), ProtectedDirectories = Lines(Protections).Select(PathPolicy.Normalize).ToArray() }, false);
     }
     private void ApplyProfile(ScanProfile p)
     {
+        p = ProfileValidation.Validate(p, false);
         Roots = string.Join(Environment.NewLine, p.Roots); Minimum = p.MinimumSize.ToString(); Maximum = p.MaximumSize == long.MaxValue ? "" : p.MaximumSize.ToString(); IncludeEmpty = p.IncludeEmpty; IncludeHidden = p.IncludeHidden; IncludeSystem = p.IncludeSystem; AllowNetwork = p.AllowNetwork; AllowCloud = p.AllowCloudHydration; Sample = p.Sample; IncludedExtensions = string.Join(',', p.IncludedExtensions); ExcludedExtensions = string.Join(',', p.ExcludedExtensions); Exclusions = string.Join(Environment.NewLine, p.ExcludedDirectories); Protections = string.Join(Environment.NewLine, p.ProtectedDirectories);
         foreach (string property in new[] { nameof(Minimum), nameof(Maximum), nameof(IncludeEmpty), nameof(IncludeHidden), nameof(IncludeSystem), nameof(AllowNetwork), nameof(AllowCloud), nameof(Sample), nameof(IncludedExtensions), nameof(ExcludedExtensions), nameof(Exclusions), nameof(Protections) }) Notify(property);
     }
@@ -152,12 +157,13 @@ public sealed class MainViewModel : Observable
     }
     private async Task ScanAsync()
     {
+        await Initialization;
         var profile = Profile(); if (profile.Roots.Length == 0) throw new IOException("Choose at least one location.");
-        Busy = true; fresh = false; InvalidatePlan(); Rows.Clear(); cancellation = new(); var watch = Stopwatch.StartNew();
+        fresh = false; InvalidatePlan(); Rows.Clear(); cancellation = new(); var watch = Stopwatch.StartNew();
         var progress = new Progress<ScanProgress>(p => { Status = p.Phase; ProgressText = $"{p.Discovered:N0} discovered · {p.Processed:N0} hashed · {p.BytesRead:N0} bytes read · {p.Groups:N0} groups · {p.Errors:N0} issues · {watch.Elapsed:mm\\:ss}"; Details = p.Activity; });
         try { scanId = await Task.Run(() => scanner.ScanAsync(profile, progress, cancellation.Token)); scannedProfile = profile; fresh = true; page = 0; await LoadResultsAsync(); Details = await Task.Run(() => store.Diagnostics(scanId)); Tab = 1; }
         catch (OperationCanceledException) { Status = "Scan cancelled; partial history retained. Rescan to continue."; }
-        finally { Busy = false; cancellation.Dispose(); cancellation = null; await LoadHistoryAsync(); }
+        finally { cancellation.Dispose(); cancellation = null; await LoadHistoryAsync(); }
     }
     private async Task LoadResultsAsync()
     {
@@ -199,13 +205,13 @@ public sealed class MainViewModel : Observable
             foreach (var row in group.Where(r => r.Selected))
             {
                 if (row.File.ReviewRequired || PathPolicy.Protected(row.File.Path, profile)) throw new IOException("Protected or review-required files cannot be selected for cleanup.");
-                string? destination = Action == CleanupAction.Quarantine ? Path.Combine(PathPolicy.Normalize(Quarantine), id.ToString("N"), Guid.NewGuid().ToString("N") + ".file") : null;
+                string? destination = Action is CleanupAction.Quarantine or CleanupAction.Recycle ? Path.Combine(PathPolicy.Normalize(Quarantine), id.ToString("N"), Guid.NewGuid().ToString("N") + ".file") : null;
                 operations.Add(new(row.File, keeper.File, Action, destination, $"User reviewed selection; keeper chosen by {Rule} or manual override."));
             }
         }
         plan = new(id, DateTime.UtcNow, operations, profile);
         PlanRows.Clear(); foreach (var operation in operations) PlanRows.Add(operation);
-        PlanText = $"{operations.Count} files planned; {operations.Sum(o => o.Source.Length):N0} logical bytes. Quarantine and recycling may reclaim zero bytes. Every operation is revalidated. Recycle is unavailable under this safety policy; choose quarantine."; Tab = 2;
+        PlanText = $"{operations.Count} files planned; {operations.Sum(o => o.Source.Length):N0} logical bytes. Quarantine and recycling may reclaim zero bytes. Recycling first stages the file in quarantine; if unavailable it remains there for explicit recovery. Every operation is revalidated."; Tab = 2;
     }
     private async Task ExecuteAsync()
     {
@@ -213,28 +219,28 @@ public sealed class MainViewModel : Observable
         // Reject UI selections changed after plan review; execute only the displayed immutable plan.
         var selected = Rows.Where(r => r.Selected).Select(r => r.File.Path).Order().ToArray();
         if (!selected.SequenceEqual(plan.Files.Select(f => f.Source.Path).Order())) throw new IOException("Selections changed. Rebuild the plan.");
-        if (MessageBox.Show($"Execute the displayed plan for {plan.Files.Count} files?\n\n{(plan.Files.Any(f => f.Action == CleanupAction.PermanentDelete) ? "PERMANENT DELETION CANNOT BE UNDONE." : "Quarantined files can be restored through the journal.")}", "Confirm reviewed plan", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-        Busy = true; cancellation = new();
-        try { var executionPlan = plan with { Profile = plan.Profile with { ProtectedDirectories = plan.Profile.ProtectedDirectories.Concat(EffectiveProfile().ProtectedDirectories).Distinct(StringComparer.OrdinalIgnoreCase).ToArray() } }; var result = await Task.Run(() => cleanup.ExecuteAsync(executionPlan, PermanentEnabled, new Progress<string>(text => Status = text), cancellation.Token)); Details = string.Join(Environment.NewLine, result); Status = "Cleanup finished — inspect the journal for per-file outcomes"; }
-        finally { Busy = false; fresh = false; cancellation.Dispose(); cancellation = null; InvalidatePlan(); await LoadHistoryAsync(); Tab = 3; }
+        if (!dialogs.ConfirmCleanup(plan)) return;
+        cancellation = new();
+        try { var executionPlan = plan with { Profile = plan.Profile with { ProtectedDirectories = plan.Profile.ProtectedDirectories.Concat(EffectiveProfile().ProtectedDirectories).Distinct(StringComparer.OrdinalIgnoreCase).ToArray() } }; var progress = new Progress<string>(text => Status = text); bool permanent = PermanentEnabled; var result = await Task.Run(() => cleanup.ExecuteAsync(executionPlan, permanent, progress, cancellation.Token)); Details = string.Join(Environment.NewLine, result); Status = "Cleanup finished — inspect the journal for per-file outcomes"; }
+        finally { fresh = false; cancellation.Dispose(); cancellation = null; InvalidatePlan(); await LoadHistoryAsync(); Tab = 3; }
     }
     private async Task RestoreAsync()
     {
         if (SelectedJournal is not { } entry) return;
-        if (MessageBox.Show("Restore to the original path? Existing files are never overwritten.\n\n" + entry.Source, "Restore quarantine", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
-        Busy = true; cancellation = new();
+        if (!dialogs.ConfirmRestore(entry)) return;
+        cancellation = new();
         try { await Task.Run(() => cleanup.RestoreAsync(entry, cancellation.Token)); Status = "Quarantined file restored"; }
-        finally { Busy = false; cancellation.Dispose(); cancellation = null; await LoadHistoryAsync(); }
+        finally { cancellation.Dispose(); cancellation = null; await LoadHistoryAsync(); }
     }
     private async Task ExportAsync()
     {
         if (scanId == null) return;
-        var dialog = new SaveFileDialog { Filter = "CSV|*.csv|JSON|*.json", FileName = "duplicates" };
-        if (dialog.ShowDialog() != true) return;
-        if (File.Exists(dialog.FileName)) throw new IOException("Choose a new export filename; exports never overwrite existing files.");
-        Busy = true; cancellation = new();
-        try { await Task.Run(() => ResultExporter.ExportAsync(store, scanId, dialog.FileName, dialog.FilterIndex == 2, cancellation.Token)); Status = "Results exported — paths are sensitive local information"; }
-        finally { Busy = false; cancellation.Dispose(); cancellation = null; }
+        var choice = dialogs.SaveExport();
+        if (choice is null) return;
+        if (File.Exists(choice.Value.Path)) throw new IOException("Choose a new export filename; exports never overwrite existing files.");
+        cancellation = new();
+        try { await Task.Run(() => ResultExporter.ExportAsync(store, scanId, choice.Value.Path, choice.Value.Json, cancellation.Token)); Status = "Results exported — paths are sensitive local information"; }
+        finally { cancellation.Dispose(); cancellation = null; }
     }
     private async Task LoadHistoryAsync()
     {

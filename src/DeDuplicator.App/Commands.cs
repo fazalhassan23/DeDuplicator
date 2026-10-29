@@ -20,8 +20,11 @@ public sealed class AsyncCommand(Func<Task> execute, Action<Exception> failed, F
     private bool running;
     public bool CanExecute(object? parameter) => !running && (enabled?.Invoke() ?? true);
     public async void Execute(object? parameter)
+        => await ExecuteAsync();
+
+    public async Task ExecuteAsync()
     {
-        if (!CanExecute(parameter)) return;
+        if (!CanExecute(null)) return;
         running = true; CommandManager.InvalidateRequerySuggested();
         try { await execute(); } catch (OperationCanceledException) { } catch (Exception ex) { failed(ex); }
         finally { running = false; CommandManager.InvalidateRequerySuggested(); }

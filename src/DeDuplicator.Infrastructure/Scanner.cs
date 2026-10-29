@@ -20,8 +20,17 @@ public sealed class Scanner(ScanStore store, IContentHasher hasher)
     private long lastReport;
     public async Task<string> ScanAsync(ScanProfile profile, IProgress<ScanProgress>? progress, CancellationToken token)
     {
+        profile = ProfileValidation.Validate(profile);
         string scan = Guid.NewGuid().ToString("N");
         discovered = processed = bytes = errors = groups = lastReport = 0; timer.Restart(); store.Start(scan, profile);
+        var timings = new Dictionary<string, long>();
+        string phase = "Enumerating"; long phaseStarted = Stopwatch.GetTimestamp(), writesStarted = store.WriteTicks;
+        var metadata = new List<FileRecord>(256);
+        void Phase(string next)
+        {
+            timings[phase] = timings.GetValueOrDefault(phase) + Stopwatch.GetTimestamp() - phaseStarted;
+            phase = next; phaseStarted = Stopwatch.GetTimestamp();
+        }
         void Report(string phase, string activity, bool force = false)
         {
             if (!force && timer.ElapsedMilliseconds - lastReport < 150) return;
@@ -60,7 +69,8 @@ public sealed class Scanner(ScanStore store, IContentHasher hasher)
                             if (info.Length == 0 ? !profile.IncludeEmpty : info.Length < profile.MinimumSize || info.Length > profile.MaximumSize) continue;
                             using var file = NativeFile.Open(path);
                             if (file.Record.Attributes.HasFlag(FileAttributes.ReparsePoint)) { Issue(path, "Replaced with reparse point."); continue; }
-                            store.Add(scan, file.Record);
+                            metadata.Add(file.Record);
+                            if (metadata.Count == 256) { store.AddBatch(scan, metadata); metadata.Clear(); }
                             if (file.Record.Links > 1) Issue(path, "Hard link: physical identity deduplicated; automatic cleanup disabled.");
                         }
                         catch (Exception ex) when (Expected(ex)) { Issue(path, ex.Message); }
@@ -69,9 +79,11 @@ public sealed class Scanner(ScanStore store, IContentHasher hasher)
                 catch (Exception ex) when (Expected(ex)) { Issue(root, ex.Message); }
                 finally { foreach (var iterator in stack) iterator.Dispose(); }
             }
+            if (metadata.Count > 0) { store.AddBatch(scan, metadata); metadata.Clear(); }
             Report("Enumerated", $"{timer.Elapsed}", true);
             foreach (long size in store.CandidateSizes(scan))
             {
+                Phase("Sampling");
                 if (profile.Sample && size >= 1024 * 1024)
                 {
                     foreach (var item in store.Files(scan, size))
@@ -91,6 +103,7 @@ public sealed class Scanner(ScanStore store, IContentHasher hasher)
                         Report("Sampling", item.File.Path);
                     }
                 }
+                Phase("Hashing");
                 foreach (var item in store.Files(scan, size))
                 {
                     token.ThrowIfCancellationRequested();
@@ -98,12 +111,14 @@ public sealed class Scanner(ScanStore store, IContentHasher hasher)
                     try
                     {
                         using var file = OpenSnapshot(item.File);
-                        string hash = await hasher.HashAsync(file.Stream, token); bytes += size; file.CheckStable();
+                        using var measured = new ReadMeter(file.Stream, count => bytes += count);
+                        string hash = await hasher.HashAsync(measured, token); file.CheckStable();
                         store.Execute("UPDATE files SET hash=$hash WHERE id=$id", ("$hash", hash), ("$id", item.Id));
                     }
                     catch (Exception ex) when (Expected(ex)) { Issue(item.File.Path, ex.Message); }
                     processed++; Report("Hashing", item.File.Path);
                 }
+                Phase("Byte verification");
                 foreach (var item in store.Files(scan, size))
                 {
                     token.ThrowIfCancellationRequested(); if (item.Hash is null) continue;
@@ -116,7 +131,7 @@ public sealed class Scanner(ScanStore store, IContentHasher hasher)
                             try
                             {
                                 using var other = OpenSnapshot(representative.File);
-                                if (await NativeFile.EqualAsync(current, other, token)) { group = representative.Id; bytes += size * 2; break; }
+                                if (await NativeFile.EqualAsync(current, other, token, count => bytes += count)) { group = representative.Id; break; }
                             }
                             catch (Exception ex) when (Expected(ex))
                             {
@@ -132,12 +147,20 @@ public sealed class Scanner(ScanStore store, IContentHasher hasher)
                     Report("Byte verification", item.File.Path);
                 }
             }
+            Phase("Finalizing");
             store.Execute("UPDATE files SET group_id=NULL WHERE scan=$scan AND group_id IN (SELECT group_id FROM files WHERE scan=$scan GROUP BY group_id HAVING count(*)<2)", ("$scan", scan));
             using (var db = store.Open()) { using var cmd = db.CreateCommand(); cmd.CommandText = "SELECT count(DISTINCT group_id) FROM files WHERE scan=$scan"; cmd.Parameters.AddWithValue("$scan", scan); groups = (long)cmd.ExecuteScalar()!; }
             store.Execute("UPDATE scans SET state='Complete' WHERE id=$scan", ("$scan", scan)); Report("Complete", $"Elapsed {timer.Elapsed}; review results before cleanup.", true); return scan;
         }
         catch (OperationCanceledException) { store.Execute("UPDATE scans SET state='Cancelled; rescan required' WHERE id=$scan", ("$scan", scan)); Report("Cancelled", "Partial results are historical only.", true); throw; }
         catch { store.Execute("UPDATE scans SET state='Failed; rescan required' WHERE id=$scan", ("$scan", scan)); throw; }
+        finally
+        {
+            Phase("Stopped");
+            timings["Database writes (overlaps phases)"] = store.WriteTicks - writesStarted;
+            foreach (var measurement in timings)
+                store.Execute("INSERT OR REPLACE INTO scan_metrics(scan,phase,elapsed_ms) VALUES($scan,$phase,$elapsed)", ("$scan", scan), ("$phase", measurement.Key), ("$elapsed", (long)(measurement.Value * 1000d / Stopwatch.Frequency)));
+        }
     }
     private bool SampleMatches(long id, string scan)
     {

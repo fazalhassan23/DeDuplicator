@@ -1,7 +1,7 @@
 # Generated persistent entities
 
-Generated from the same SQLite initializer as the [structural reference](schema-reference.md).
-Relationships shown here are logical application relationships, not enforced foreign keys.
+Generated from the same ordered migrations as the [structural reference](schema-reference.md).
+Relationship labels distinguish logical links from enforced foreign keys.
 
 ```mermaid
 erDiagram
@@ -33,7 +33,15 @@ erDiagram
         TEXT record
         TEXT created
         TEXT hash
+        TEXT keeper_record
+        TEXT recycle_receipt
     }
+    scan_metrics {
+        TEXT scan PK
+        TEXT phase PK
+        INTEGER elapsed_ms
+    }
+    scans ||--o{ scan_metrics : "FK scan"
     scans {
         TEXT id PK
         TEXT started

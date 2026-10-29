@@ -2,15 +2,15 @@
 
 A local Windows application for finding exact duplicates by primary file contents. Different names can match; equal names, timestamps or extensions never prove equality. SHA-256 candidates require complete byte verification.
 
-The current [version](docs/generated/version.md) is an unreleased alpha. The initial app remains [draft PR #1](https://github.com/fazalhassan23/DeDuplicator/pull/1). Reviewed quarantine/restore passes fixture tests, but recycling is deliberately unavailable and broader qualification remains incomplete. Read [limitations](docs/known-limitations.md) before using real files.
+The current [version](docs/generated/version.md) is an unreleased alpha. The initial app remains [draft PR #1](https://github.com/fazalhassan23/DeDuplicator/pull/1). Reviewed quarantine, real Windows recycling and journal restore pass fixture tests; broader platform qualification remains incomplete. Read [limitations](docs/known-limitations.md) before using real files.
 
 ## Capabilities
 
 - Incremental folder/drive scanning with filters, protections, physical identities and SQLite history.
 - Sample elimination, complete SHA-256 and byte verification, with cancellation and per-file issues.
 - Paged results, deterministic keeper proposals, overrides and reviewed immutable plans.
-- Revalidated no-overwrite quarantine, verified cross-volume copy/removal and journal-based completed-entry restore.
-- Explicit advanced permanent deletion; no silent recycling fallback.
+- Revalidated no-overwrite quarantine, verified cross-volume copy/removal and journal-based validated recovery.
+- Windows Recycle Bin with a recoverable staging step and journal receipt; explicit advanced permanent deletion with no silent fallback.
 - Streaming CSV/JSON exports with formula protection; no content/path/hash upload or telemetry.
 
 The [user guide](docs/user-guide.md) explains the workflow and [safety/recovery](docs/safety-and-recovery.md) defines guarantees. Offscreen WPF renders are generated locally in `artifacts/ui` and excluded from Git because they contain local fixture paths. No sanitized public screenshot or interactive desktop certification is supplied yet.

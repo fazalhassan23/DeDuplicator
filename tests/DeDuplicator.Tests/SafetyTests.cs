@@ -113,10 +113,10 @@ public sealed class SafetyTests : IDisposable
         string a = Write("a", "same"); Write("b", "same"); File.WriteAllText(a + ":information", "extra");
         var group = Assert.Single(await Run()); Assert.True(group.Files.Single(f => f.Path == a).ReviewRequired);
     }
-    [Fact] public async Task RecycleNeverFallsBackAndPermanentDeletionRequiresOptIn()
+    [Fact] public async Task PermanentDeletionRequiresExplicitOptIn()
     {
         Write("a", "same"); Write("b", "same"); var groups = await Run(); var cleanup = new CleanupService(store);
-        foreach (var action in new[] { CleanupAction.Recycle, CleanupAction.PermanentDelete })
+        foreach (var action in new[] { CleanupAction.PermanentDelete })
         { var plan = Planner.Create(groups, new(), KeepRule.ShortestPath, action, Path.Combine(root, "q")); var results = await cleanup.ExecuteAsync(plan, false, null, default); Assert.StartsWith("Skipped:", results[0]); Assert.True(File.Exists(plan.Files[0].Source.Path)); }
     }
     [Fact] public async Task HistoricalRunningScansAndOperationsBecomeInterrupted()

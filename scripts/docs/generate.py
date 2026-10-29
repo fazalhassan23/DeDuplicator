@@ -37,6 +37,14 @@ def version(root: Path = ROOT) -> str:
 
 
 def schema_sql(root: Path = ROOT) -> str:
+    migrations = sorted((root / "src/DeDuplicator.Infrastructure/Migrations").glob("[0-9][0-9][0-9]_*.sql"))
+    if migrations:
+        if [int(path.name[:3]) for path in migrations] != list(range(1, len(migrations) + 1)):
+            raise ValueError("Schema migrations must be contiguous and unique from 001")
+        source = root / "src/DeDuplicator.Infrastructure/SchemaMigrator.cs"
+        if source.exists() and not re.search(rf'CurrentVersion\s*=\s*{len(migrations)}\s*;', source.read_text(encoding="utf-8")):
+            raise ValueError("SchemaMigrator.CurrentVersion must match the migration sequence")
+        return "\n\n".join(path.read_text(encoding="utf-8").strip() for path in migrations)
     source = (root / "src/DeDuplicator.Infrastructure/ScanStore.cs").read_text(encoding="utf-8")
     matches = re.findall(r'cmd\.CommandText\s*=\s*"""\s*(.*?)\s*""";', source, re.S)
     if len(matches) != 1 or "CREATE TABLE" not in matches[0]:
@@ -45,7 +53,7 @@ def schema_sql(root: Path = ROOT) -> str:
 
 
 def schema_reference(root: Path = ROOT) -> str:
-    lines = ["# Generated SQLite structure", "", "Generated from the initializer in `src/DeDuplicator.Infrastructure/ScanStore.cs`.",
+    lines = ["# Generated SQLite structure", "", "Generated from the ordered SQL migrations in `src/DeDuplicator.Infrastructure/Migrations` (legacy inline SQL is supported only for fixtures).",
              "Do not edit this reference; run `npm run docs:generate`. Explanations and lifecycle rules are in [schema](../schema.md).", ""]
     with sqlite3.connect(":memory:") as db:
         db.executescript(schema_sql(root))
@@ -66,7 +74,7 @@ def schema_reference(root: Path = ROOT) -> str:
 
 
 def entity_diagram(root: Path = ROOT) -> str:
-    lines = ["# Generated persistent entities", "", "Generated from the same SQLite initializer as the [structural reference](schema-reference.md).", "Relationships shown here are logical application relationships, not enforced foreign keys.", "", "```mermaid", "erDiagram"]
+    lines = ["# Generated persistent entities", "", "Generated from the same ordered migrations as the [structural reference](schema-reference.md).", "Relationship labels distinguish logical links from enforced foreign keys.", "", "```mermaid", "erDiagram"]
     with sqlite3.connect(":memory:") as db:
         db.executescript(schema_sql(root))
         for (table,) in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").fetchall():
@@ -74,6 +82,8 @@ def entity_diagram(root: Path = ROOT) -> str:
             for _, name, kind, _, _, pk in db.execute(f'PRAGMA table_info("{table}")'):
                 lines.append(f"        {kind} {name}" + (" PK" if pk else ""))
             lines.append("    }")
+            for foreign_key in db.execute(f'PRAGMA foreign_key_list("{table}")'):
+                lines.append(f'    {foreign_key[2]} ||--o{{ {table} : "FK {foreign_key[3]}"')
     lines += ['    scans ||--o{ files : "logical scan id"', '    scans ||--o{ issues : "logical scan id"', "```", "", "`files.group_id` is a provisional representative file-row ID, without a foreign key or group table. `journal.plan` is an action-plan UUID without a persisted plan table. Journal snapshots intentionally survive independently of scan rows.", ""]
     return "\n".join(lines)
 
@@ -82,7 +92,7 @@ def references(root: Path = ROOT) -> dict[str, str]:
     result = {
         "docs/generated/schema-reference.md": schema_reference(root),
         "docs/generated/entities.md": entity_diagram(root),
-        "docs/generated/version.md": f"# Generated version reference\n\n| Concept | Current source and value |\n| --- | --- |\n| Application release | `Version.props`: `{version(root)}` |\n| Database schema | Unversioned initializer; SQLite `user_version` remains `0` |\n| Profile and export formats | Unversioned JSON/CSV; no format-version field |\n| CI build | Workflow run ID and Git commit; not the application release version |\n\nRegenerate with `npm run docs:generate`. See [versioning](../versioning-and-releases.md) for compatibility and release policy.\n"
+        "docs/generated/version.md": f"# Generated version reference\n\n| Concept | Current source and value |\n| --- | --- |\n| Application release | `Version.props`: `{version(root)}` |\n| Database schema | SQLite `user_version` = `{len(list((root / 'src/DeDuplicator.Infrastructure/Migrations').glob('[0-9][0-9][0-9]_*.sql')))}`; ordered embedded migrations |\n| Profile and export formats | Unversioned JSON/CSV; no format-version field |\n| CI build | Workflow run ID and Git commit; not the application release version |\n\nRegenerate with `npm run docs:generate`. See [versioning](../versioning-and-releases.md) for compatibility and release policy.\n"
     }
     changelog = root / "CHANGELOG.md"
     if changelog.exists():

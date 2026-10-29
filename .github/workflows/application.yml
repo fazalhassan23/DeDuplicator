@@ -1,0 +1,43 @@
+name: Application
+
+on:
+  pull_request:
+    branches: [staging, main]
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: application-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows build, safety tests and package
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install pinned SDK
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
+        with:
+          global-json-file: global.json
+      - name: Build, test and create portable package
+        shell: pwsh
+        run: ./scripts/build.ps1 -Package
+      - name: Retain validation evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-validation
+          path: |
+            artifacts/test-results/
+            artifacts/performance/
+            artifacts/DeDuplicator-*-win-x64.zip
+          retention-days: 14

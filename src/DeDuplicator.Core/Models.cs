@@ -46,7 +46,7 @@ public static class Planner
                 .ThenBy(f => rule switch { KeepRule.Oldest => f.ModifiedUtc.Ticks, KeepRule.Newest => -f.ModifiedUtc.Ticks, KeepRule.PreferredDirectory => !string.IsNullOrWhiteSpace(preferred) && PathPolicy.Within(f.Path, preferred) ? 0L : 1L, _ => f.Path.Length })
                 .ThenBy(f => f.Path, StringComparer.OrdinalIgnoreCase).First();
             foreach (var file in files.Where(f => f != keeper && !f.ReviewRequired && !PathPolicy.Protected(f.Path, profile)))
-                planned.Add(new(file, keeper, action, action == CleanupAction.Quarantine ? System.IO.Path.Combine(PathPolicy.Normalize(quarantine), id.ToString("N"), Guid.NewGuid().ToString("N") + ".file") : null, $"Keep {keeper.Path}: {rule}; protected/review files retained."));
+                planned.Add(new(file, keeper, action, action is CleanupAction.Quarantine or CleanupAction.Recycle ? System.IO.Path.Combine(PathPolicy.Normalize(quarantine), id.ToString("N"), Guid.NewGuid().ToString("N") + ".file") : null, $"Keep {keeper.Path}: {rule}; protected/review files retained."));
         }
         return new(id, DateTime.UtcNow, planned, profile);
     }

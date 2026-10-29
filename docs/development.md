@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Windows 10/11 x64 and a .NET 10 SDK; `global.json` accepts current .NET 10 feature bands from 10.0.100 onward. See [dependency decisions](dependencies.md) for the verified selection.
+- Windows 10/11 x64 and a .NET 10 SDK; `global.json` accepts current .NET 10 feature bands from 10.0.403 onward. See [dependency decisions](dependencies.md) for the verified selection.
 - Python 3.11+ with its standard-library SQLite for documentation generation and tests.
 - Node.js 22+ and npm for pinned Markdown/Mermaid tooling. `npm ci` downloads Chromium for Mermaid into its standard user cache; optionally set `PUPPETEER_CACHE_DIR` to a writable local directory and keep it consistent when checking docs.
 - Git; GitHub CLI is optional for creating PRs. No administrator privileges are needed by the application.
@@ -32,8 +32,10 @@ The PR body file contains the [structured impact declaration](git-workflow.md#do
 
 ## Structure and debugging
 
-`src/DeDuplicator.Core` holds domain settings and planning; Infrastructure owns scanning, Win32 file access, SQLite, cleanup and exports; App owns WPF resources/views, commands, presentation state and explicit DI. `tests/DeDuplicator.Tests` combines local NTFS, domain and offscreen WPF tests. `scripts/docs` holds the read-only gate, deterministic generators and their tests. [Architecture](architecture.md) covers dependencies and [ADRs](decisions/README.md) explain decisions.
+`src/DeDuplicator.Core` holds domain settings and planning; Infrastructure owns scanning, Win32 file access, SQLite, cleanup and exports; App owns WPF resources/views, commands, presentation state and explicit DI. `tests/DeDuplicator.Tests` combines local NTFS, domain and native-window dispatcher workflow tests. `scripts/docs` holds the read-only gate, deterministic generators and their tests. [Architecture](architecture.md) covers dependencies and [ADRs](decisions/README.md) explain decisions.
 
 Open `DeDuplicator.slnx` in a .NET 10-capable Windows IDE and select DeDuplicator.App as startup project, or use the CLI. Debug output uses Microsoft logging's Debug provider. Scan issues and cleanup outcomes are also visible in the expandable activity area and journal. Use generated fixtures for debugging destructive operations; never point automated tests at user data. The app permits only one instance per Windows username/session to protect active journal state. Closing during an operation requests cancellation and asks you to wait before closing again.
 
 The current application dependency is [draft PR #1](https://github.com/fazalhassan23/DeDuplicator/pull/1). The documentation branch includes that ancestor so source-based checks can run; it must not be independently merged as a way to bypass that draft's incomplete scope. See [Git workflow](git-workflow.md).
+
+The Windows application workflow runs the same build script with -Package on pull requests. Packaging includes root security, changelog and contributing guidance alongside docs/profiles. Contributor links to source files require the repository checkout. The unsigned package remains a prerelease until release qualifications are met.

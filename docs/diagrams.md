@@ -1,6 +1,6 @@
 # Implementation diagrams
 
-These Mermaid sources describe implemented paths and explicit refusals. CI renders every fence; reviewers still check semantics. The [persistent entity diagram](generated/entities.md) is generated from the SQLite initializer and labels logical relationships without implying foreign keys.
+These Mermaid sources describe implemented paths and explicit refusals. CI renders every fence; reviewers still check semantics. The [persistent entity diagram](generated/entities.md) is generated from ordered migrations and labels logical relationships separately from enforced foreign keys.
 
 ## Application architecture
 
@@ -98,8 +98,12 @@ flowchart TD
     Equal -- No --> Failed
     Equal -- Yes --> Action{Reviewed action}
     Action -- Quarantine --> Move[Handle rename or verified cross-volume transfer]
-    Action -- Recycle --> Refuse[Refuse and require new explicit choice]
-    Refuse --> Failed
+    Action -- Recycle --> Stage[Verified quarantine staging]
+    Stage --> Shell[Revalidate then Shell RecycleItem only]
+    Shell --> Receipt[Persist recovery receipt]
+    Receipt --> Done
+    Shell -. Unsupported or failed .-> Retain[Retain staging or require inspection]
+    Retain --> Next
     Action -- PermanentDelete --> Enabled{Advanced option enabled?}
     Enabled -- No --> Failed
     Enabled -- Yes --> Delete[Delete through validated handle]
@@ -122,7 +126,7 @@ flowchart TD
     Flush --> Verify{All destination bytes match source?}
     Verify -- No --> Inspect[Retain source and inspect partial copy]
     Verify -- Yes --> Promote[Promote without overwrite]
-    Promote --> Remove[Delete source through validated handle]
+    Promote --> Remove[Hold verified destination locked while deleting source through handle]
     Remove --> Complete
     Rename -- Other error --> Fail[Record Failed and inspect]
     Copy -. Interruption .-> Inspect
@@ -137,7 +141,7 @@ flowchart TD
     Restoring --> Restored[Record Restored]
     Restoring -. Failure .-> RestoreFailed[Record Restore failed and inspect paths]
     Startup[Application restart] --> Scans[Mark Running scans interrupted and require rescan]
-    Startup --> InFlight[Mark Started Copied and Restoring entries interrupted]
+    Startup --> InFlight[Mark Started Copied Staged and Restoring entries interrupted]
     InFlight --> Inspect
 ```
 

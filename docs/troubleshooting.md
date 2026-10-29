@@ -16,11 +16,11 @@ Access-denied, locked, changed or disconnected files become issues. Do not eleva
 
 Rescan stale/historical results, retain a keeper and exclude protected/review-required copies. Identity/content/permission/attribute/stream changes, missing keepers and occupied destinations cause refusals. Inspect individual journal outcomes; do not assume an atomic batch.
 
-Recycle is unavailable without a permanent fallback. Choose quarantine explicitly and rebuild/review. Interrupted cross-volume operations may leave partial/promoted copies plus the original; inspect both before deleting anything. Restore conflicts require explicit resolution. Failed/interrupted entries cannot restore automatically because outcomes can be ambiguous.
+Unsupported recycling retains verified staging when available and never falls back to permanent deletion. Restore the recorded staging entry, or inspect Windows Recycle Bin if receipt persistence was interrupted. Interrupted cross-volume operations may leave partial/promoted copies plus the original; inspect both before deleting anything. Restore conflicts require explicit resolution. Failed/interrupted entries with a valid recorded copy can be restored after inspection; ambiguous or missing copies require manual recovery.
 
 ## Database startup errors
 
-Stop the app and preserve `%LOCALAPPDATA%\DeDuplicator`, including quarantine and SQLite companions, before investigating. Do not erase recovery journals as an upgrade workaround. There is no migration runner; `CREATE TABLE IF NOT EXISTS` does not add missing columns to older incompatible tables. Keep the matching app/database pair and plan a deliberate migration/manual recovery; never experiment on the only journal copy.
+Stop the app and preserve `%LOCALAPPDATA%\DeDuplicator`, including quarantine and SQLite companions, before investigating. Do not erase recovery journals as an upgrade workaround. Numbered migrations upgrade recognized legacy and older versioned schemas transactionally. Unknown unversioned or newer schemas are rejected. A failed upgrade rolls back its DDL and version stamp. Keep the matching app/database pair for recovery; there is no automatic downgrade. Never experiment on the only journal copy.
 
 Only one instance per Windows username/session runs. Use its existing window; closing during work requests cancellation and waits before allowing closure. Startup errors are displayed locally without executing cleanup in the error handler.
 

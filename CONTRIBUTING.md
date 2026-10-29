@@ -26,10 +26,12 @@ Preserve a verified keeper, use deterministic tie-breaking, revalidate before mu
 
 Before each completed change, identify affected topics using [impact-rules.json](scripts/docs/impact-rules.json), update the authoritative explanation, add a [fragment](.changes/README.md) when appropriate, regenerate derived references and update affected diagrams. Run the documentation gate and relevant application tests, then commit the documentation in the same branch. Repeat after additional code pushes.
 
-Schema changes require schema notes, entity diagrams, a migration plan and appropriate migration tests. There are no released migrations today; do not imply the initializer upgrades existing databases. Keep application, schema, file-format and CI versions distinct. Record consequential decisions as short [ADRs](docs/decisions/README.md).
+Schema changes require schema notes, entity diagrams, a migration plan and appropriate migration tests. Numbered transactional migrations now upgrade recognized databases; preserve published migration history and cover both upgrade and failure rollback. Keep application, schema, file-format and CI versions distinct. Record consequential decisions as short [ADRs](docs/decisions/README.md).
 
 ## Review and integration
 
 Follow the [Git workflow](docs/git-workflow.md). Use a cohesive branch from current `origin/staging`, focused commits and a PR into staging. Draft incomplete or dependency-blocked work. Do not manufacture trivial PRs or meaningless documentation edits to satisfy a mapping; justify a real exemption instead. Reviewers verify semantics because file mappings cannot do that automatically.
 
 Completed changes require clean local checks, passing required CI, required reviews and resolved actionable feedback. The required status is **Documentation / documentation**. Repository automation has read-only permissions, never approves its own work, and never pushes changes. Main, release tags and publishing require separate explicit user authorization. Use the [release checklist](docs/release-checklist.md) when preparing a release.
+
+Application CI additionally runs the Windows Release build, safety/workflow tests and self-contained package creation with read-only permissions. It retains test reports, performance smoke evidence and a package for 14 days. Passing it does not replace platform qualification or authorize publication.

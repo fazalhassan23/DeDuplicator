@@ -8,7 +8,7 @@ Names/hashes cannot alone prove byte equality; primary-equal files may carry dis
 
 ## Decision
 
-Use Windows .NET/WPF, a WPF-independent domain and SQLite metadata. Narrow by size/sample/SHA-256 and verify all bytes. Keep processing local, retain keepers, review metadata/link/stream differences and revalidate before mutation. Recommend journaled no-overwrite quarantine; refuse recycling under the current handle policy.
+Use Windows .NET/WPF, a WPF-independent domain and SQLite metadata. Narrow by size/sample/SHA-256 and verify all bytes. Keep processing local, retain keepers, review metadata/link/stream differences and revalidate before mutation. Recommend journaled no-overwrite quarantine; stage and revalidate before the Shell recycling-only method, with explicit recovery receipts.
 
 ## Consequences
 

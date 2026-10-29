@@ -20,18 +20,18 @@ Propose by shortest path, oldest, newest or preferred directory; protection/revi
 
 Review action plan shows source, retained keeper, action, destination and reasons. Select a row for full details; resize/scroll columns. Rebuild after changing selections or action/destination controls: a displayed plan is immutable. A stale or all-removal plan is refused.
 
-Quarantine is recommended. Recycle execution refuses safely and never becomes permanent deletion. PermanentDelete requires the advanced option and final confirmation and cannot be undone. Logical redundant bytes do not promise free storage; same-volume quarantine normally retains allocation.
+Quarantine is recommended. Recycle stages a verified copy at the reviewed quarantine location before moving it into Windows Recycle Bin; unsupported recycling retains staging and never becomes permanent deletion. PermanentDelete requires the advanced option and final confirmation and cannot be undone. Logical redundant bytes do not promise free storage; same-volume quarantine normally retains allocation.
 
 ## Execute and recover
 
 Execution asks for confirmation, then revalidates identities, contents, protection and metadata. Changed/missing/unreadable copies are skipped with reasons. Batches can partially succeed; cancellation can leave source and destination/partial files. Inspect the journal and [safety/recovery instructions](safety-and-recovery.md), never retry blindly.
 
-History and recovery shows recent scans and journal entries. Restore only accepts completed quarantine entries with a vacant original path, existing non-reparse parent hierarchy and matching quarantine content. Occupied paths require explicit resolution without overwrite. Interrupted or failed operations need manual inspection.
+History and recovery shows recent scans and journal entries. Restore validates a recorded quarantine/staging file or a recycled item identified by its journal receipt. It requires a vacant original path, existing non-reparse parent hierarchy and matching content hash/length. Occupied paths require explicit resolution without overwrite. Inspect failed/interrupted entries before recovery; missing or ambiguous copies require manual resolution.
 
 Historical results are stale. Rescan historical profile loads saved settings, then a new scan repeats all enumeration/comparisons. Cleanup invalidates the fresh UI state; rescan before another plan. True pause/incremental resume is not implemented.
 
 ## Export and diagnostics
 
-Export includes all stored duplicate members beyond visible page limits, to a new CSV or JSON file without overwrite. CSV quotes/neutralizes spreadsheet-formula prefixes. Full paths, identities and hashes are sensitive local information; no upload occurs.
+Export includes all stored duplicate members beyond visible page limits, to a new CSV or JSON file without overwrite. Exports are flushed to an exclusive temporary sibling and published only on success; cancellation/failure never publishes a partial final file. CSV quotes/neutralizes spreadsheet-formula prefixes. Full paths, identities and hashes are sensitive local information; no upload occurs.
 
 Expand activity/issues for outcomes. Diagnostics shows the first 500 issues, journal the latest 1,000 operations and history the latest 100 scans; older database rows are retained. See [troubleshooting](troubleshooting.md).

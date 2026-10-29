@@ -36,3 +36,7 @@ The GitHub Actions workflow is named `Documentation`, with job display name `Doc
 The workflow uses hosted runners, read-only contents permission, no stored checkout credentials, no secrets and no privileged `pull_request_target`. It reports specific errors and never rewrites a PR. It uses the event's exact base/HEAD SHAs and compares their merge base to HEAD, so unrelated newer staging changes do not become this PR's obligations. Metadata edits retrigger it, so exemption/body changes are validated.
 
 The owner can require the context above with strict/up-to-date checks under **Settings → Branches → staging → Require status checks to pass before merging**. Preserve any existing required reviews, contexts, restrictions and protections. Do not enable a main update or bypass as part of documentation setup. If this check is not yet present on an older draft PR, update that branch through its normal development workflow; do not invent a successful check or bypass the new gate. [Validation](validation.md) records the protection setup actually performed in this task.
+
+## Application validation
+
+The Application workflow runs the Windows build, safety tests and package job for staging/main PRs and merge queues. Actions are pinned to verified commits, checkout credentials are not persisted, and no secrets or publishing permissions are supplied. The Windows build, safety tests and package check is reported separately; the existing required documentation protection remains unchanged. Inspect both results before integration.

@@ -29,6 +29,22 @@ class DocumentationGateTests(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
+    def test_ordered_migrations_include_altered_columns_and_enforced_relationships(self):
+        self.write("src/DeDuplicator.Infrastructure/Migrations/001_initial.sql", "CREATE TABLE scans(id TEXT PRIMARY KEY); CREATE TABLE journal(id TEXT);")
+        self.write("src/DeDuplicator.Infrastructure/Migrations/002_evidence.sql", "ALTER TABLE journal ADD COLUMN receipt TEXT; CREATE TABLE metrics(scan TEXT REFERENCES scans(id),elapsed INTEGER CHECK(elapsed>=0));")
+        self.write("src/DeDuplicator.Infrastructure/SchemaMigrator.cs", "public const int CurrentVersion = 2;")
+        self.assertIn("`receipt`", generate.schema_reference(self.root))
+        self.assertIn("CHECK(elapsed>=0)", generate.schema_reference(self.root))
+        self.assertIn('scans ||--o{ metrics : "FK scan"', generate.entity_diagram(self.root))
+        self.write("src/DeDuplicator.Infrastructure/SchemaMigrator.cs", "public const int CurrentVersion = 3;")
+        with self.assertRaises(ValueError):
+            generate.schema_sql(self.root)
+
+    def test_migration_sequence_gaps_fail_generation(self):
+        self.write("src/DeDuplicator.Infrastructure/Migrations/002_evidence.sql", "CREATE TABLE evidence(id TEXT);")
+        with self.assertRaises(ValueError):
+            generate.schema_sql(self.root)
+
     def write(self, relative, text):
         path = self.root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
